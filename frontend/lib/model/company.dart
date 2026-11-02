@@ -1,5 +1,7 @@
+import '../config/app_config.dart';
+
 /// Datos de la empresa / negocio.
-/// Edita [current] con la información real del negocio.
+/// La información activa se configura centralizadamente en [AppConfig].
 class Company {
   // ── DATOS DEL NEGOCIO ─────────────────────────────
   final String nombre;
@@ -12,7 +14,7 @@ class Company {
   final String? telefono2;
   final String? correo;
   final String? sitioWeb;
-  final String? logoPath; // ruta del asset (ej: 'assets/logo.png')
+  final String? logoPath; // ruta del asset (ej: 'assets/logo.jpeg')
 
   const Company({
     required this.nombre,
@@ -35,20 +37,20 @@ class Company {
   String get encabezadoTicket => '$nombre  |  RNC: $rnc';
 
   // ──────────────────────────────────────────────────
-  // INSTANCIA ACTIVA DEL NEGOCIO  ← edita aquí
+  // INSTANCIA ACTIVA DEL NEGOCIO (Obtenida de AppConfig)
   // ──────────────────────────────────────────────────
   static const Company current = Company(
-    nombre: 'Menuxa',
-    slogan: 'Todo tu restaurante en un solo lugar',
-    rnc: '402-2412952-4',
-    direccion: 'Direccion del Restaurante',
-    ciudad: 'Santiago de los Caballeros',
-    pais: 'Rep. Dom',
-    telefono: '809-769-9580',
-    telefono2: null,
-    correo: 'info@menuxa.com',
-    sitioWeb: 'www.menuxa.com',
-    logoPath: 'assets/icon/app_icon_1.png',
+    nombre: AppConfig.nombreEmpresa,
+    slogan: AppConfig.slogan,
+    rnc: AppConfig.rnc,
+    direccion: AppConfig.direccion,
+    ciudad: AppConfig.ciudad,
+    pais: AppConfig.pais,
+    telefono: AppConfig.telefonoPrincipal,
+    telefono2: AppConfig.telefonoSecundario,
+    correo: AppConfig.correo,
+    sitioWeb: AppConfig.sitioWeb,
+    logoPath: AppConfig.logoFactura,
   );
 }
 
@@ -57,20 +59,21 @@ class Company {
 // ──────────────────────────────────────────────────
 class SystemInfo {
   /// Nombre comercial del sistema
-  static const String systemName = 'Menuxa';
+  static const String systemName = AppConfig.appName;
 
   /// Versión del sistema
-  static const String version = '2.0.0';
+  static const String version = AppConfig.appVersion;
 
   /// Empresa desarrolladora
-  static const String developerName = 'Lwader-Soft';
+  static const String developerName = AppConfig.developerName;
 
   /// Sitio web del desarrollador
-  static const String developerWeb = 'www.lwader-soft.com';
+  static const String developerWeb = AppConfig.developerWeb;
 
   /// Línea de crédito que aparece al pie del ticket
-  static const String ticketCredit = 'Powered by $systemName · $developerName';
+  static const String ticketCredit = AppConfig.ticketCredit;
 
   /// Línea corta para ticket (80mm)
-  static const String ticketCreditShort = 'Powered by Lwader-Soft';
+  static const String ticketCreditShort =
+      'Powered by ${AppConfig.developerName}';
 }

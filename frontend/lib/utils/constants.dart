@@ -1,70 +1,45 @@
-// import 'package:factu_me/model/usuario.dart';
 import 'package:flutter/material.dart';
+import '../config/app_config.dart';
 import '../model/company.dart';
-export '../model/company.dart'; // re-exportar para código que importe constants.dart
 
-// import '../model/empresa_local.dart';
+// Re-exportar para compatibilidad en todo el proyecto
+export '../config/app_config.dart';
+export '../model/company.dart';
 
-const String appName = 'Menuxa';
-const String sloganApp = 'Todo tu restaurante en un solo lugar';
-const String developer = 'Lwader-Soft';
-const String developerVersion = '2.0.0';
+// ──────────────────────────────────────────────────
+// ALIASES CENTRALIZADOS DESDE AppConfig
+// (Modifica directamente lib/config/app_config.dart para cambiar de negocio)
+// ──────────────────────────────────────────────────
+const String appName = AppConfig.appName;
+const String sloganApp = AppConfig.slogan;
+const String developer = AppConfig.developerName;
+const String developerVersion = AppConfig.appVersion;
 
-final String menuxaAIKeyAPY =
-    ''; // LA CLAVE SE MOVIÓ AL BACKEND (.env) POR SEGURIDAD
+final String menuxaAIKeyAPY = ''; // La clave se gestiona en el backend (.env)
 
-// User? currentUsuario;
+const String logoApp = AppConfig.logoApp;
+const String hostName = AppConfig.serverUrl;
+const String apiUrl = '$hostName${AppConfig.apiVersion}';
 
-const String logoApp = 'assets/logo.jpeg';
-// const ipLocal = '23.231.65.39';
-///  otra ip :  104.206.57.61
-
-// const ipLocal = '104.206.57.61';
-//92.168.1.102
-// const ipLocal = '192.168.100.7:8000';
-
-//const hostName = 'https://lwadersoft.site';
-
-// http://lwadersoft.site/api/login
-const hostName = 'http://127.0.0.1:8000';
-const apiUrl = '$hostName/api/v2';
-// http://127.0.0.1:8000
-
-// const pathHost = 'lwader/backend/';
-//const pathHost = 'ultimate_php/backend/';
-const String logoSinFondo = 'assets/logo_sin_fondo.png';
-const String logoFactura = "assets/logo.jpeg";
-// const String vertical = "imagen/vertical.png";
+const String logoSinFondo = AppConfig.logoSinFondo;
+const String logoFactura = AppConfig.logoFactura;
 const double kwidth = 250;
 
 String firmaLu = 'assets/logo_lwader.png';
 
 String backgroundCafeteria = 'assets/background_cafeteria.png';
 String backgroundLibreria = 'assets/background_libreria.png';
-String backgroundFoodFast = "assets/background.png";
+String backgroundFoodFast = 'assets/background.png';
 
-String developerFirma = 'Lwader-Soft';
+String developerFirma = AppConfig.developerName;
 
 String textConfirmacion = '👉🏼Esta seguro realizar el pedido ? 👈🏼';
 String textConfAction = '👉🏼Esta seguro realizar la acción ? 👈🏼';
 String eliminarMjs = '🥺Esta seguro de eliminar🥺';
-// String ActionMjs = '👉🏼Esta seguro de confirmar el tiempo ?👈🏼';
 String confirmarMjs =
     '👉🏼Esta seguro de confirmar el despacho de las facturas?👈🏼';
 
 String actionMjs = '👉🏼Esta seguro de confirmar el tiempo ?👈🏼';
-
-// EmpresaLocal currentEmpresa = EmpresaLocal(
-//   adressEmpressa:
-//       'C. Beller #78, Puerto Plata 57000, Puerto Plata, República Dominicana',
-//   celularEmpresa: '809-291-6505/ 829-421-8550',
-//   nombreEmpresa: 'Tejidos Tropical',
-//   oficinaEmpres: '809-291-6505/ 829-421-8550',
-//   rncEmpresa: '037-0029474-1',
-//   telefonoEmpresa: '809-291-6505/ 829-421-8550',
-//   nCFEmpresa: '037-0029474-1',
-//   correoEmpresa: 'Tejidostropical@gmail.com',
-// );
 
 final List<String> estadoHojaList = [
   'PENDIENTE'.toUpperCase(),
@@ -75,6 +50,7 @@ final List<String> estadoHojaList = [
   'CANCELADO'.toUpperCase(),
   'NORMAL'.toUpperCase(),
 ];
+
 final Map<String?, Color> estadoHojaColores = {
   'PENDIENTE'.toUpperCase(): Colors.orange,
   'EN PROCESO'.toUpperCase(): Colors.blue,
@@ -84,13 +60,14 @@ final Map<String?, Color> estadoHojaColores = {
   'CANCELADO'.toUpperCase(): Colors.red,
   'NORMAL'.toUpperCase(): Colors.white,
 };
+
 List<String>? priorityList = ['NORMAL', 'EMERGENCIA', 'PRIORIDAD', 'AGREGADO'];
 
 Map<String, Color> priorityColors = {
-  'NORMAL': Colors.white, // Cliente: NORMAL
-  'EMERGENCIA': Colors.red.shade400, // Cliente: EMERGENCIA
-  'PRIORIDAD': Colors.orange, // Cliente: PRIORIDAD
-  'AGREGADO': Colors.yellow.shade300, // Cliente: AGREGADO,
+  'NORMAL': Colors.white,
+  'EMERGENCIA': Colors.red.shade400,
+  'PRIORIDAD': Colors.orange,
+  'AGREGADO': Colors.yellow.shade300,
 };
 
 Map<String, IconData> priorityIcons = {
@@ -99,9 +76,9 @@ Map<String, IconData> priorityIcons = {
   'PRIORIDAD': Icons.priority_high,
   'AGREGADO': Icons.add_circle_outline,
 };
+
 Color getColorPriority(String priorityName) {
-  return priorityColors[priorityName] ??
-      Colors.white; // Retorna gris si no coincide con ninguna prioridad
+  return priorityColors[priorityName] ?? Colors.white;
 }
 
 String getClientePorPrioridad(String prioridad) {
@@ -115,16 +92,13 @@ String getClientePorPrioridad(String prioridad) {
     case 'Hoja amarilla':
       return 'Agregado';
     default:
-      return 'Normal'; // En caso de que no coincida con ninguna prioridad
+      return 'Normal';
   }
 }
 
 // ──────────────────────────────────────────────────
-// DATOS DE LA EMPRESA → ver lib/model/company.dart
-// Usa Company.current para acceder a nombre, RNC, dirección, teléfono, etc.
+// DATOS DE LA EMPRESA (Compatibilidad hacia atrás)
 // ──────────────────────────────────────────────────
-
-// Aliases de compatibilidad (evitan cambiar código existente)
 String get empresaNombre => Company.current.nombre;
 String get empresaDireccion => Company.current.direccionCompleta;
 String get empresaRNC => Company.current.rnc;

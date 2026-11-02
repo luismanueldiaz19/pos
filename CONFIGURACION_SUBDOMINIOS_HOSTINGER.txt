@@ -1,0 +1,174 @@
+================================================================================
+GUÍA COMPLETA: CONFIGURACIÓN DE SUBDOMINIOS EN HOSTINGER Y SERVIDOR VPS
+Para: tienda.comunidadfantino.site  y  cafeteria.comunidadfantino.site
+================================================================================
+
+Rutas en el servidor:
+- TIENDA:     /var/www/p_factino_tienda/pos/backend/public
+- CAFETERIA:  /var/www/p_factino_cafeteria/pos/backend/public
+
+Objetivo:
+- API Tienda:     https://tienda.comunidadfantino.site/api/...
+- API Cafetería:  https://cafeteria.comunidadfantino.site/api/...
+
+--------------------------------------------------------------------------------
+PASO 1: CREAR LOS REGISTROS DNS EN HOSTINGER
+--------------------------------------------------------------------------------
+1. Inicia sesión en tu panel de Hostinger (hPanel).
+2. Ve a la sección: "Dominios" -> Selecciona "comunidadfantino.site".
+3. En el menú lateral izquierdo, haz clic en "DNS / Servidores de nombres" (DNS Zone).
+4. En "Administrar registros DNS" (Añadir un registro / Add Record):
+
+   REGISTRO 1 (Para Tienda):
+   - Tipo: A
+   - Nombre (Host): tienda
+   - Apunta a (Points to / Valor): [LA IP PÚBLICA DE TU SERVIDOR VPS, ej: 185.xxx.xxx.xxx]
+   - TTL: 300 (o 14400 / Automático)
+   - Clic en "Añadir registro" (Add Record).
+
+   REGISTRO 2 (Para Cafetería):
+   - Tipo: A
+   - Nombre (Host): cafeteria
+   - Apunta a (Points to / Valor): [LA MISMA IP PÚBLICA DE TU SERVIDOR VPS]
+   - TTL: 300 (o 14400 / Automático)
+   - Clic en "Añadir registro" (Add Record).
+
+* Nota: El subdominio puede tardar entre 5 y 15 minutos en propagarse por internet.
+
+
+--------------------------------------------------------------------------------
+PASO 2: HABILITAR MOD_REWRITE EN APACHE (EN EL SERVIDOR)
+--------------------------------------------------------------------------------
+Conéctate por SSH a tu servidor y ejecuta:
+
+   a2enmod rewrite
+   systemctl restart apache2
+
+
+--------------------------------------------------------------------------------
+PASO 3: CONFIGURAR LOS VIRTUAL HOSTS EN APACHE
+--------------------------------------------------------------------------------
+
+A) Crear Virtual Host para TIENDA:
+   nano /etc/apache2/sites-available/tienda.conf
+
+   Pega el siguiente contenido:
+   ----------------------------------------------------------------
+   <VirtualHost *:80>
+       ServerName tienda.comunidadfantino.site
+       DocumentRoot /var/www/p_factino_tienda/pos/backend/public
+
+       <Directory /var/www/p_factino_tienda/pos/backend/public>
+           Options -Indexes +FollowSymLinks
+           AllowOverride All
+           Require all granted
+       </Directory>
+
+       ErrorLog ${APACHE_LOG_DIR}/tienda_error.log
+       CustomLog ${APACHE_LOG_DIR}/tienda_access.log combined
+   </VirtualHost>
+   ----------------------------------------------------------------
+   (Guarda con Ctrl + O, Enter, y sal con Ctrl + X)
+
+
+B) Crear Virtual Host para CAFETERÍA:
+   nano /etc/apache2/sites-available/cafeteria.conf
+
+   Pega el siguiente contenido:
+   ----------------------------------------------------------------
+   <VirtualHost *:80>
+       ServerName cafeteria.comunidadfantino.site
+       DocumentRoot /var/www/p_factino_cafeteria/pos/backend/public
+
+       <Directory /var/www/p_factino_cafeteria/pos/backend/public>
+           Options -Indexes +FollowSymLinks
+           AllowOverride All
+           Require all granted
+       </Directory>
+
+       ErrorLog ${APACHE_LOG_DIR}/cafeteria_error.log
+       CustomLog ${APACHE_LOG_DIR}/cafeteria_access.log combined
+   </VirtualHost>
+   ----------------------------------------------------------------
+   (Guarda con Ctrl + O, Enter, y sal con Ctrl + X)
+
+
+C) Activar los dos sitios y reiniciar Apache:
+   a2ensite tienda.conf
+   a2ensite cafeteria.conf
+   apache2ctl configtest    # (Debe responder: Syntax OK)
+   systemctl reload apache2
+
+
+--------------------------------------------------------------------------------
+PASO 4: INSTALAR CERTIFICADOS SSL GRATUITOS (HTTPS CON LET'S ENCRYPT)
+--------------------------------------------------------------------------------
+Si aún no tienes Certbot instalado:
+   apt update
+   apt install -y certbot python3-certbot-apache
+
+Ejecuta Certbot para generar los certificados HTTPS automáticamente:
+   certbot --apache -d tienda.comunidadfantino.site -d cafeteria.comunidadfantino.site
+
+Sigue las instrucciones:
+- Coloca tu correo.
+- Acepta los términos (Y).
+- Si te pregunta si deseas redirigir todo el tráfico HTTP a HTTPS, elige la opción de Redirigir (Redirect).
+
+
+--------------------------------------------------------------------------------
+PASO 5: AJUSTAR EL ARCHIVO .ENV DE CADA BACKEND
+--------------------------------------------------------------------------------
+
+1. En TIENDA:
+   nano /var/www/p_factino_tienda/pos/backend/.env
+
+   Configura:
+   APP_URL=https://tienda.comunidadfantino.site
+   DB_DATABASE=tienda   (o el nombre de la BD para tienda)
+
+2. En CAFETERÍA:
+   nano /var/www/p_factino_cafeteria/pos/backend/.env
+
+   Configura:
+   APP_URL=https://cafeteria.comunidadfantino.site
+   DB_DATABASE=cafeteria   (o el nombre de la BD para cafeteria)
+
+
+--------------------------------------------------------------------------------
+PASO 6: PERMISOS Y LIMPIEZA DE CACHÉ
+--------------------------------------------------------------------------------
+
+Para TIENDA:
+   cd /var/www/p_factino_tienda/pos/backend
+   chown -R www-data:www-data storage bootstrap/cache
+   chmod -R 775 storage bootstrap/cache
+   php artisan optimize:clear
+   php artisan config:cache
+   php artisan route:cache
+
+Para CAFETERÍA:
+   cd /var/www/p_factino_cafeteria/pos/backend
+   chown -R www-data:www-data storage bootstrap/cache
+   chmod -R 775 storage bootstrap/cache
+   php artisan optimize:clear
+   php artisan config:cache
+   php artisan route:cache
+
+
+--------------------------------------------------------------------------------
+PASO 7: CÓMO CONSUMIR LA API DESDE EL FRONTEND
+--------------------------------------------------------------------------------
+Ahora tu aplicación móvil/web puede apuntar independientemente a:
+
+- Para Tienda:
+  Base URL: https://tienda.comunidadfantino.site/api
+  Ejemplo:  https://tienda.comunidadfantino.site/api/login
+            https://tienda.comunidadfantino.site/api/facturas
+
+- Para Cafetería:
+  Base URL: https://cafeteria.comunidadfantino.site/api
+  Ejemplo:  https://cafeteria.comunidadfantino.site/api/login
+            https://cafeteria.comunidadfantino.site/api/facturas
+================================================================================
+

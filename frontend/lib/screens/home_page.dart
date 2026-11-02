@@ -25,6 +25,7 @@ import '../palletes/app_colors.dart';
 import '../providers/auth_provider.dart';
 import '../providers/auth_state.dart';
 import '../utils/helpers.dart';
+import '../utils/constants.dart';
 import '../modulo_menu/menu_builder.dart';
 import 'dashboard_buttons_section/dashboard_buttons_section.dart';
 import 'login_page.dart';
@@ -299,7 +300,7 @@ class _MyHomePageState extends ConsumerState<MyHomePage> {
       case 4:
         return 'Reportes Generales';
       default:
-        return 'Menuxa';
+        return appName;
     }
   }
 
@@ -617,3 +618,5 @@ class _MyHomePageState extends ConsumerState<MyHomePage> {
     );
   }
 }
+
+
