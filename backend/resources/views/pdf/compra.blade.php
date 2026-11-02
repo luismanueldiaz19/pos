@@ -333,7 +333,7 @@
         <!-- PIE DE PÁGINA -->
         <div class="footer">
             Documento generado el {{ \Carbon\Carbon::now()->format('d/m/Y H:i') }} &nbsp;|&nbsp;
-            {{ strtoupper($company['nombre']) }} &nbsp;|&nbsp; Menuxa
+            {{ $company['nombre'] }}
         </div>
     </div>
 </body>

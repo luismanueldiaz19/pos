@@ -14,6 +14,17 @@ class ProveedorSeeder extends Seeder
      * @return void
      */
     public function run(): void {
+        Proveedor::firstOrCreate(
+            ['nombre' => 'Gastos Menores / Ocasionales'],
+            [
+                'rnc' => '000000000',
+                'telefono' => '000-000-0000',
+                'direccion' => 'Operaciones Locales',
+                'es_informal' => true,
+                'activo' => true,
+            ]
+        );
+
 
 
 

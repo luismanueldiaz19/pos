@@ -15,7 +15,6 @@ use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
-use Barryvdh\DomPDF\Facade\Pdf;
 
 class CotizacionController extends Controller
 {
@@ -24,6 +23,17 @@ class CotizacionController extends Controller
     public function __construct(
         private readonly CotizacionService $cotizacionService
     ) {}
+
+    private function resolveCompanyData(Request $request): array
+    {
+        return [
+            'company_name'    => $request->input('company_name') ?: config('company.nombre'),
+            'company_rnc'     => $request->input('company_rnc') ?: config('company.rnc'),
+            'company_address' => $request->input('company_address') ?: config('company.direccion'),
+            'company_phone'   => $request->input('company_phone') ?: config('company.telefono'),
+            'company_email'   => $request->input('company_email') ?: config('company.email'),
+        ];
+    }
 
     public function store(StoreCotizacionRequest $request): JsonResponse
     {
@@ -64,14 +74,10 @@ class CotizacionController extends Controller
             $query->where('estado', $request->estado);
         }
 
-        if ($request->filled('search')) {
-            $search = $request->search;
-            $idSearch = preg_replace('/[^0-9]/', '', $search);
-
-            $query->where(function ($q) use ($search, $idSearch) {
-                if (!empty($idSearch)) {
-                    $q->where('id', $idSearch);
-                }
+        if ($request->filled('buscar')) {
+            $search = $request->buscar;
+            $query->where(function ($q) use ($search) {
+                $q->where('id', 'LIKE', "%{$search}%");
                 $q->orWhereHas('cliente', function ($q2) use ($search) {
                     $q2->where('nombre', 'LIKE', "%{$search}%")
                        ->orWhere('rnc_cedula', 'LIKE', "%{$search}%");
@@ -86,18 +92,14 @@ class CotizacionController extends Controller
         ')->first();
 
         $cotizaciones = $query->paginate($request->per_page ?? 15);
+        $companyData = $this->resolveCompanyData($request);
 
-        $cotizaciones->getCollection()->transform(function ($cotizacion) use ($request) {
+        $cotizaciones->getCollection()->transform(function ($cotizacion) use ($companyData) {
             $token = Str::random(40);
             Cache::put("short_link_{$token}", [
                 'type' => 'cotizacion',
                 'id' => $cotizacion->id,
-                'companyData' => [
-                    'company_name' => $request->company_name,
-                    'company_rnc' => $request->company_rnc,
-                    'company_address' => $request->company_address,
-                    'company_phone' => $request->company_phone,
-                ]
+                'companyData' => $companyData
             ], now()->addHours(24));
 
             $cotizacion->pdf_url = "/d/{$token}";
@@ -120,16 +122,12 @@ class CotizacionController extends Controller
                 return $this->errorResponse('Cotización no encontrada', 404);
             }
 
+            $companyData = $this->resolveCompanyData($request);
             $token = Str::random(40);
             Cache::put("short_link_{$token}", [
                 'type' => 'cotizacion',
                 'id' => $cotizacion->id,
-                'companyData' => [
-                    'company_name' => $request->company_name,
-                    'company_rnc' => $request->company_rnc,
-                    'company_address' => $request->company_address,
-                    'company_phone' => $request->company_phone,
-                ]
+                'companyData' => $companyData
             ], now()->addHours(24));
 
             $cotizacion->pdf_url = "/d/{$token}";
@@ -157,5 +155,4 @@ class CotizacionController extends Controller
             message: 'Estado actualizado a ' . $cotizacion->estado
         );
     }
-
 }

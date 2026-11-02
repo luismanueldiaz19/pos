@@ -364,7 +364,7 @@
         <!-- PIE DE PÁGINA -->
         <div class="footer">
             Reporte generado automáticamente el {{ $fechaGeneracion->format('d/m/Y H:i:s') }} &nbsp;|&nbsp;
-            {{ strtoupper($company['nombre']) }} &nbsp;|&nbsp; Sistema de Restaurante Menuxa
+            {{ $company['nombre'] }}
         </div>
     </div>
 </body>

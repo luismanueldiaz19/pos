@@ -11,14 +11,19 @@ class CompraApi {
     String? fechaHasta,
     String? estado,
     String? search,
+    bool? esGasto,
+    int? cuentaContableId,
     int page = 1,
+    int perPage = 20,
   }) async {
     final api = ApiService();
-    String query = '$baseUrl?page=$page';
+    String query = '$baseUrl?page=$page&per_page=$perPage';
     if (fechaDesde != null && fechaDesde.isNotEmpty) query += '&fecha_desde=$fechaDesde';
     if (fechaHasta != null && fechaHasta.isNotEmpty) query += '&fecha_hasta=$fechaHasta';
     if (estado != null && estado.isNotEmpty && estado != 'todos') query += '&estado=$estado';
     if (search != null && search.isNotEmpty) query += '&search=$search';
+    if (esGasto != null) query += '&es_gasto=' + (esGasto ? '1' : '0');
+    if (cuentaContableId != null) query += '&cuenta_contable_id=$cuentaContableId';
     
     final response = await api.get(query, token: token);
 

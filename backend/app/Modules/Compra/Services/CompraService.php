@@ -148,14 +148,21 @@ class CompraService
                 $customConfigsCompra['compra_proveedor_haber'] = $proveedor->cuenta_contable_cxp_id;
             }
 
+            $esGasto = collect($detallesProcesados)->every(fn($d) => empty($d['producto_id']));
+            $descGastoGlosa = ($esGasto && !empty($detallesProcesados[0]['descripcion']))
+                ? " ({$detallesProcesados[0]['descripcion']})"
+                : '';
+            $prefijoGlosa = $esGasto ? 'Registro de gasto' : 'Registro de compra';
+            $glosaCompra = "{$prefijoGlosa} factura " . ($dto->numero_factura_proveedor ?? 'S/N') . ($proveedor ? " - {$proveedor->nombre}" : '') . $descGastoGlosa;
+
             $asientoCompra = $this->contabilidadService->registrarAsientoAuto(
                 new RegistrarAsientoDTO(
                     tipo_transaccion: 'compra_inventario',
                     subtotal: (float) $subtotal,
                     itbis: (float) $impuestos,
                     total: (float) $total,
-                    referencia: $ncfFinal ?? $dto->numero_factura_proveedor ?? "COMPRA-{$compra->id}",
-                    glosa: "Registro de compra factura " . ($dto->numero_factura_proveedor ?? 'S/N') . ($proveedor ? " - {$proveedor->nombre}" : ''),
+                    referencia: $ncfFinal ?? $dto->numero_factura_proveedor ?? ($esGasto ? "GASTO-{$compra->id}" : "COMPRA-{$compra->id}"),
+                    glosa: $glosaCompra,
                     usuario_id: auth()->id() ?? 1,
                     custom_configs: $customConfigsCompra,
                     costo: 0.0,
@@ -197,14 +204,15 @@ class CompraService
                         $customConfigsPago['compra_proveedor_haber'] = $proveedor->cuenta_contable_cxp_id;
                     }
 
+                    $prefijoPagoGlosa = $esGasto ? 'Pago inmediato de gasto' : 'Pago inmediato de compra';
                     $asientoPago = $this->contabilidadService->registrarAsientoAuto(
                         new RegistrarAsientoDTO(
                             tipo_transaccion: 'pago_compra',
                             subtotal: 0.0,
                             itbis: 0.0,
                             total: (float) $montoOriginalCxp,
-                            referencia: $dto->referencia_pago ?? "PAGO-COMPRA-{$compra->id}",
-                            glosa: "Pago inmediato de compra factura " . ($dto->numero_factura_proveedor ?? 'S/N') . ($proveedor ? " - {$proveedor->nombre}" : ''),
+                            referencia: $dto->referencia_pago ?? ($esGasto ? "PAGO-GASTO-{$compra->id}" : "PAGO-COMPRA-{$compra->id}"),
+                            glosa: "{$prefijoPagoGlosa} factura " . ($dto->numero_factura_proveedor ?? 'S/N') . ($proveedor ? " - {$proveedor->nombre}" : ''),
                             usuario_id: auth()->id() ?? 1,
                             custom_configs: $customConfigsPago,
                             costo: 0.0,

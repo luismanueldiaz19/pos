@@ -31,13 +31,13 @@ class DashboardButtonsSection extends ConsumerWidget {
           color: Colors.green.shade600,
           onTap: () => onAction('venta'),
         ),
-      if (auth.hasPermission('crear_facturas'))
-        DashboardButton(
-          title: 'Pedidos',
-          icon: Icons.restaurant_menu_rounded,
-          color: Colors.amber.shade700,
-          onTap: () => onAction('pedidos'),
-        ),
+      // if (auth.hasPermission('crear_facturas'))
+      //   DashboardButton(
+      //     title: 'Pedidos',
+      //     icon: Icons.restaurant_menu_rounded,
+      //     color: Colors.amber.shade700,
+      //     onTap: () => onAction('pedidos'),
+      //   ),
       if (auth.hasPermission('ver_facturas'))
         DashboardButton(
           title: 'Ventas',

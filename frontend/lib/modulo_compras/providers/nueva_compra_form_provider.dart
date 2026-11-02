@@ -32,12 +32,12 @@ class NuevaCompraDetalleItem {
     required this.impuestoMonto,
   });
 
-  double get total => cantidad * costoUnitario;
-  double get subtotal => total - impuestoMonto;
+  double get subtotal => cantidad * costoUnitario;
+  double get total => subtotal + impuestoMonto;
 
   double get costoUnitarioConItbis {
     if (cantidad <= 0) return costoUnitario;
-    return (subtotal + impuestoMonto) / cantidad;
+    return total / cantidad;
   }
 
   Map<String, dynamic> toJson() {

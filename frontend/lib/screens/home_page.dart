@@ -12,8 +12,9 @@ import 'package:sistema_restaurante/modulo_ordenes_compra/screens/crear_orden_co
 import 'package:sistema_restaurante/modulo_ordenes_compra/screens/historial_ordenes_compra_screen.dart';
 import 'package:sistema_restaurante/modulo_compras/screens/cxp_list_screen.dart';
 import 'package:sistema_restaurante/modulo_compras/screens/registrar_gasto_screen.dart';
+import 'package:sistema_restaurante/modulo_compras/screens/gastos_list_screen.dart';
 import 'package:sistema_restaurante/modulo_cxc/screens/cxc_list_screen.dart';
-import 'package:sistema_restaurante/pedidos/screens/pedidos_screen.dart';
+// import 'package:sistema_restaurante/pedidos/screens/pedidos_screen.dart';
 import 'package:sistema_restaurante/widgets/custom_confirm_dialog.dart';
 import 'package:sistema_restaurante/widgets/custom_sidebar.dart';
 import '../facturacion/screens/historial_ventas_screen.dart';
@@ -30,6 +31,7 @@ import '../modulo_menu/menu_builder.dart';
 import 'dashboard_buttons_section/dashboard_buttons_section.dart';
 import 'login_page.dart';
 import '../modulo_ai/screens/chat_ia_screen.dart';
+import '../widgets/fullscreen_toggle_button.dart';
 
 class MyHomePage extends ConsumerStatefulWidget {
   const MyHomePage({super.key});
@@ -283,6 +285,10 @@ class _MyHomePageState extends ConsumerState<MyHomePage> {
             ),
           ),
         ),
+        const SizedBox(width: 8),
+        Container(width: 1, height: 24, color: Colors.grey.shade300),
+        const SizedBox(width: 4),
+        const FullscreenToggleButton(color: AppColors.azulOscuro, size: 22),
       ],
     );
   }
@@ -342,12 +348,12 @@ class _MyHomePageState extends ConsumerState<MyHomePage> {
                         );
                         break;
                       case 'pedidos':
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => const PedidosScreen(),
-                          ),
-                        );
+                        // Navigator.push(
+                        //   context,
+                        //   MaterialPageRoute(
+                        //     builder: (_) => const PedidosScreen(),
+                        //   ),
+                        // );
                         break;
                       case 'clientes':
                         Navigator.push(
@@ -411,6 +417,15 @@ class _MyHomePageState extends ConsumerState<MyHomePage> {
                           context,
                           MaterialPageRoute(
                             builder: (_) => const CxcListScreen(),
+                          ),
+                        );
+                        break;
+                      case 'gastos':
+                      case 'gestion_gastos':
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const GastosListScreen(),
                           ),
                         );
                         break;
@@ -618,5 +633,3 @@ class _MyHomePageState extends ConsumerState<MyHomePage> {
     );
   }
 }
-
-

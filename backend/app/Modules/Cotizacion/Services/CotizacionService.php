@@ -52,15 +52,15 @@ class CotizacionService
                 'descuento_total' => round($descuentoTotal, 2),
                 'itbis' => round($itbisTotal, 2),
                 'total' => round($total, 2),
-                'estado' => 'aprobado',
                 'nota' => $dto->nota,
+                'estado' => 'pendiente',
                 'created_at' => now(),
                 'updated_at' => now(),
             ]);
 
-            foreach ($detallesCalculados as $detalle) {
-                $item = $detalle['item'];
-                $calc = $detalle['calc'];
+            foreach ($detallesCalculados as $d) {
+                $item = $d['item'];
+                $calc = $d['calc'];
 
                 DB::table('cotizacion_detalles')->insert([
                     'cotizacion_id' => $cotizacion_id,
@@ -75,11 +75,19 @@ class CotizacionService
                 ]);
             }
 
+            $companyData = [
+                'company_name'    => !empty($dto->companyData['company_name']) ? $dto->companyData['company_name'] : config('company.nombre'),
+                'company_rnc'     => !empty($dto->companyData['company_rnc']) ? $dto->companyData['company_rnc'] : config('company.rnc'),
+                'company_address' => !empty($dto->companyData['company_address']) ? $dto->companyData['company_address'] : config('company.direccion'),
+                'company_phone'   => !empty($dto->companyData['company_phone']) ? $dto->companyData['company_phone'] : config('company.telefono'),
+                'company_email'   => !empty($dto->companyData['company_email']) ? $dto->companyData['company_email'] : config('company.email'),
+            ];
+
             $token = Str::random(40);
             Cache::put("short_link_{$token}", [
                 'type' => 'cotizacion',
                 'id' => $cotizacion_id,
-                'companyData' => $dto->companyData
+                'companyData' => $companyData
             ], now()->addHours(24));
 
             return [
@@ -93,27 +101,26 @@ class CotizacionService
     {
         $cantidad = (float) $item['cantidad'];
         $precio = (float) $item['precio'];
-        $itbisPct = isset($item['itbis_porcentaje']) ? (float) $item['itbis_porcentaje'] : 18.0;
-        $divisor = 1 + ($itbisPct / 100);
+        $base = $cantidad * $precio;
 
-        $linea = $cantidad * $precio;
-        $base = $divisor > 1 ? $linea / $divisor : $linea;
-
-        $descuento = isset($item['descuento']) ? (float) $item['descuento'] : 0.0;
+        $descuento = 0.0;
         if (!empty($item['descuento_porcentaje'])) {
             $descuento = $base * ((float) $item['descuento_porcentaje'] / 100);
+        } elseif (!empty($item['descuento'])) {
+            $descuento = (float) $item['descuento'];
         }
 
-        $baseConDescuento = $base - $descuento;
-        $itbis = $baseConDescuento * ($itbisPct / 100);
-        $total = $baseConDescuento + $itbis;
+        $baseConDescuento = max(0, $base - $descuento);
+
+        $itbisPorcentaje = (float) ($item['itbis_porcentaje'] ?? 18);
+        $itbis = $baseConDescuento * ($itbisPorcentaje / 100);
 
         return [
             'base' => $base,
             'descuento' => $descuento,
             'baseConDescuento' => $baseConDescuento,
             'itbis' => $itbis,
-            'total' => $total
+            'total' => $baseConDescuento + $itbis
         ];
     }
 }

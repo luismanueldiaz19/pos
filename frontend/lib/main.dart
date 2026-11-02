@@ -4,11 +4,15 @@ import 'app.dart';
 import 'providers/auth_provider.dart';
 import 'screens/login_page.dart';
 import 'services/api_services.dart';
+import 'services/window_service.dart';
 import 'utils/navigation_service.dart';
 
 bool _isLoggingOut = false;
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Inicializar gestión de ventana de escritorio (Pantalla Completa y F11)
+  await WindowService.init();
 
   final container = ProviderContainer();
 

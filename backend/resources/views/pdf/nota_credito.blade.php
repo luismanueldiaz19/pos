@@ -197,6 +197,10 @@
             $data = file_get_contents($logoPath);
             $base64Logo = 'data:image/' . $type . ';base64,' . base64_encode($data);
         }
+        $companyNombre = config('company.name', 'Menuxa Restaurante SRL');
+        $companyRnc = config('company.rnc', '40224129524');
+        $companyTel = config('company.phone', '(809) 000-0000');
+        $companyDir = config('company.address', 'Santo Domingo, República Dominicana');
     ?>
     <div class="container">
         <!-- HEADER -->
@@ -208,13 +212,13 @@
                             <img src="{{ $base64Logo }}" alt="Logo">
                         </div>
                     @else
-                        <h1 class="company-name">MENUXA</h1>
+                        <h1 class="company-name">{{ $companyNombre }}</h1>
                     @endif
                     <div class="company-details" style="margin-top: 10px;">
-                        <strong>Tu Restaurante Favorito</strong><br>
-                        Tel: (809) 555-5555<br>
-                        RNC: 123456789<br>
-                        Santo Domingo, República Dominicana
+                        <strong>{{ $companyNombre }}</strong><br>
+                        Tel: {{ $companyTel }}<br>
+                        RNC: {{ $companyRnc }}<br>
+                        {{ $companyDir }}
                     </div>
                 </td>
                 <td style="width: 50%;">
@@ -310,8 +314,7 @@
 
         <!-- FOOTER -->
         <div class="footer">
-            Comprobante de Devolución / Nota de Crédito<br>
-            Generado por Sistema MENUXA
+            Comprobante de Devolución / Nota de Crédito &bull; {{ $companyNombre }}
         </div>
     </div>
 </body>

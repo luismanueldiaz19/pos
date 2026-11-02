@@ -52,10 +52,11 @@ class DocumentLinkController extends Controller
         $cotizacion = Cotizacion::with(['cliente', 'detalles', 'user'])->findOrFail($id);
 
         $company = [
-            'nombre' => $companyData['company_name'] ?? 'Tu Restaurante Favorito',
-            'rnc' => $companyData['company_rnc'] ?? '123456789',
-            'direccion' => $companyData['company_address'] ?? 'Santo Domingo, República Dominicana',
-            'telefono' => $companyData['company_phone'] ?? '(809) 555-5555',
+            'nombre'    => !empty($companyData['company_name']) ? $companyData['company_name'] : config('company.nombre'),
+            'rnc'       => !empty($companyData['company_rnc']) ? $companyData['company_rnc'] : config('company.rnc'),
+            'direccion' => !empty($companyData['company_address']) ? $companyData['company_address'] : config('company.direccion'),
+            'telefono'  => !empty($companyData['company_phone']) ? $companyData['company_phone'] : config('company.telefono'),
+            'email'     => !empty($companyData['company_email']) ? $companyData['company_email'] : config('company.email'),
         ];
 
         $pdf = Pdf::loadView('pdf.cotizacion', compact('cotizacion', 'company'));

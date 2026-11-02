@@ -23,10 +23,11 @@
         .top-band-inner { width: 100%; }
         .top-band-inner td { vertical-align: middle; }
         .company-name {
-            font-size: 22px;
-            font-weight: 900;
-            letter-spacing: 1.5px;
+            font-size: 19px;
+            font-weight: 800;
+            letter-spacing: 0.3px;
             color: #fff;
+            line-height: 1.25;
         }
         .company-sub {
             font-size: 11px;
@@ -218,16 +219,16 @@
     <?php
         $logoPath = public_path('images/app_icon.png');
         $base64Logo = '';
-        if(file_exists($logoPath)) {
-            $type = pathinfo($logoPath, PATHINFO_EXTENSION);
+        if (file_exists($logoPath)) {
+            $ext = strtolower(pathinfo($logoPath, PATHINFO_EXTENSION));
             $data = file_get_contents($logoPath);
-            $base64Logo = 'data:image/' . $type . ';base64,' . base64_encode($data);
+            $base64Logo = 'data:image/' . $ext . ';base64,' . base64_encode($data);
         }
 
-        $companyNombre    = isset($company) ? $company['nombre']   : 'MENUXA';
-        $companyRnc       = isset($company) ? $company['rnc']      : '';
-        $companyTel       = isset($company) ? $company['telefono'] : '';
-        $companyDir       = isset($company) ? $company['direccion']: '';
+        $companyNombre    = !empty($company['nombre']) ? $company['nombre'] : config('company.nombre', 'EMPRESA');
+        $companyRnc       = !empty($company['rnc']) ? $company['rnc'] : config('company.rnc', '');
+        $companyTel       = !empty($company['telefono']) ? $company['telefono'] : config('company.telefono', '');
+        $companyDir       = !empty($company['direccion']) ? $company['direccion'] : config('company.direccion', '');
 
         $cliente = $cotizacion->cliente;
         $emision = \Carbon\Carbon::parse($cotizacion->fecha_emision)->format('d/m/Y');
@@ -252,7 +253,7 @@
                         @if($base64Logo)
                             <img src="{{ $base64Logo }}" alt="Logo" style="max-height:55px; margin-bottom:8px;">
                         @endif
-                        <div class="company-name">{{ strtoupper($companyNombre) }}</div>
+                        <div class="company-name">{{ $companyNombre }}</div>
                         <div class="company-sub">
                             @if($companyRnc) RNC: {{ $companyRnc }} &nbsp;|&nbsp; @endif
                             @if($companyTel) Tel: {{ $companyTel }} @endif
@@ -404,7 +405,7 @@
         {{-- ── FOOTER ── --}}
         <div class="footer">
             Cotización generada el {{ \Carbon\Carbon::now()->format('d/m/Y H:i') }} &nbsp;|&nbsp;
-            {{ strtoupper($companyNombre) }} &nbsp;|&nbsp; MENUXA
+            {{ $companyNombre }}
             <br>Este documento no tiene validez como Comprobante Fiscal.
         </div>
 

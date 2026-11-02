@@ -1,4 +1,5 @@
 import '../../modulo_producto/models/producto.dart';
+import '../../model/catalogo_cuenta_model.dart';
 import '../../model/user.dart';
 import 'proveedor.dart';
 
@@ -19,6 +20,11 @@ class Compra {
   final String? notas;
   final List<CompraDetalle> detalles;
   final String? pdfUrl;
+  final int? asientoId;
+  final Map<String, dynamic>? asiento;
+  final Map<String, dynamic>? cuentaPorPagar;
+
+  bool get esGasto => detalles.isNotEmpty && detalles.every((d) => d.productoId == null);
 
   Compra({
     required this.id,
@@ -37,6 +43,9 @@ class Compra {
     this.notas,
     this.detalles = const [],
     this.pdfUrl,
+    this.asientoId,
+    this.asiento,
+    this.cuentaPorPagar,
   });
 
   factory Compra.fromJson(Map<String, dynamic> json) {
@@ -56,6 +65,9 @@ class Compra {
       estado: json['estado'] ?? 'PENDIENTE',
       notas: json['notas'],
       pdfUrl: json['pdf_url'],
+      asientoId: json['asiento_id'],
+      asiento: json['asiento'] is Map<String, dynamic> ? json['asiento'] : null,
+      cuentaPorPagar: json['cuenta_por_pagar'] is Map<String, dynamic> ? json['cuenta_por_pagar'] : null,
       detalles: json['detalles'] != null
           ? (json['detalles'] as List).map((d) => CompraDetalle.fromJson(d)).toList()
           : [],
@@ -87,6 +99,8 @@ class CompraDetalle {
   final int? productoId;
   final Producto? producto;
   final String? descripcion;
+  final int? cuentaContableId;
+  final CatalogoCuentaModel? cuentaContable;
   final double cantidad;
   final double costoUnitario;
   final double subtotal;
@@ -99,6 +113,8 @@ class CompraDetalle {
     this.productoId,
     this.producto,
     this.descripcion,
+    this.cuentaContableId,
+    this.cuentaContable,
     required this.cantidad,
     required this.costoUnitario,
     required this.subtotal,
@@ -113,6 +129,8 @@ class CompraDetalle {
       productoId: json['producto_id'],
       producto: json['producto'] != null ? Producto.fromJson(json['producto']) : null,
       descripcion: json['descripcion'],
+      cuentaContableId: json['cuenta_contable_id'],
+      cuentaContable: json['cuenta_contable'] != null ? CatalogoCuentaModel.fromJson(json['cuenta_contable']) : null,
       cantidad: double.tryParse(json['cantidad']?.toString() ?? '0') ?? 0.0,
       costoUnitario: double.tryParse(json['costo_unitario']?.toString() ?? '0') ?? 0.0,
       subtotal: double.tryParse(json['subtotal']?.toString() ?? '0') ?? 0.0,

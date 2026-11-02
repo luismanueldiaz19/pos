@@ -1,10 +1,8 @@
 import 'dart:convert';
-import 'package:sistema_restaurante/modulo_cotizaciones/models/cotizacion_model.dart';
 import 'package:sistema_restaurante/modulo_cliente/models/cliente.dart';
 import 'package:sistema_restaurante/facturacion/models/factura_item.dart';
 import 'package:sistema_restaurante/services/api_services.dart';
 import 'package:sistema_restaurante/utils/constants.dart';
-import 'package:sistema_restaurante/model/company.dart';
 
 class CotizacionService {
   final ApiService _api = ApiService();
@@ -71,19 +69,35 @@ class CotizacionService {
     Map<String, String>? filters,
   }) async {
     try {
-      String query = "";
-      if (filters != null && filters.isNotEmpty) {
-        query = "?" + filters.entries.map((e) => "${e.key}=${e.value}").join("&");
-      }
+      final company = Company.current;
+      final queryParams = <String, String>{
+        if (filters != null) ...filters,
+        "company_name": company.nombre,
+        "company_rnc": company.rnc,
+        "company_address": company.direccionCompleta,
+        "company_phone": company.telefono,
+      };
 
-      final response = await _api.get("$_baseUrl/cotizaciones$query", token: token);
+      final query =
+          "?" +
+          queryParams.entries
+              .map(
+                (e) =>
+                    "${Uri.encodeComponent(e.key)}=${Uri.encodeComponent(e.value)}",
+              )
+              .join("&");
+
+      final response = await _api.get(
+        "$_baseUrl/cotizaciones$query",
+        token: token,
+      );
       final data = jsonDecode(response.body);
 
       if (response.statusCode == 200) {
         return {
-          "success": true, 
+          "success": true,
           "data": data['data'],
-          "resumen": data['resumen']
+          "resumen": data['resumen'],
         };
       } else {
         return {
@@ -101,14 +115,21 @@ class CotizacionService {
     required String token,
   }) async {
     try {
-      final response = await _api.get("$_baseUrl/cotizaciones/$id", token: token);
+      final company = Company.current;
+      final query =
+          "?company_name=${Uri.encodeComponent(company.nombre)}"
+          "&company_rnc=${Uri.encodeComponent(company.rnc)}"
+          "&company_address=${Uri.encodeComponent(company.direccionCompleta)}"
+          "&company_phone=${Uri.encodeComponent(company.telefono)}";
+
+      final response = await _api.get(
+        "$_baseUrl/cotizaciones/$id$query",
+        token: token,
+      );
       final data = jsonDecode(response.body);
 
       if (response.statusCode == 200) {
-        return {
-          "success": true,
-          "data": data['data']
-        };
+        return {"success": true, "data": data['data']};
       } else {
         return {
           "success": false,
@@ -126,17 +147,18 @@ class CotizacionService {
     required String token,
   }) async {
     try {
-      final response = await _api.patch(
-        "$_baseUrl/cotizaciones/$id/estado",
-        {"estado": estado},
-        token: token,
-      );
+      final response = await _api.patch("$_baseUrl/cotizaciones/$id/estado", {
+        "estado": estado,
+      }, token: token);
       final data = jsonDecode(response.body);
 
       if (response.statusCode == 200) {
         return {"success": true, "message": data['message']};
       } else {
-        return {"success": false, "message": data['message'] ?? "Error al actualizar"};
+        return {
+          "success": false,
+          "message": data['message'] ?? "Error al actualizar",
+        };
       }
     } catch (e) {
       return {"success": false, "message": "Error de conexión: $e"};

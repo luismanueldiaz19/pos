@@ -371,5 +371,23 @@ class CatalogoCuentasSeeder extends Seeder
             'padre_id' => $gastos->id,
             'permite_movimiento' => true
         ]);
+
+        CatalogoCuenta::create([
+            'codigo' => '6.12',
+            'nombre' => 'COMBUSTIBLE Y TRANSPORTE',
+            'tipo'   => 'Gastos',
+            'nivel'  => 2,
+            'padre_id' => $gastos->id,
+            'permite_movimiento' => true
+        ]);
+
+        CatalogoCuenta::create([
+            'codigo' => '6.13',
+            'nombre' => 'REPUESTOS Y REPARACIONES MENORES',
+            'tipo'   => 'Gastos',
+            'nivel'  => 2,
+            'padre_id' => $gastos->id,
+            'permite_movimiento' => true
+        ]);
     }
 }

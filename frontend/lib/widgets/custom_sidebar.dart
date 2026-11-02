@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:animate_do/animate_do.dart';
 import '../palletes/app_colors.dart';
 import '../utils/constants.dart';
+import 'fullscreen_toggle_button.dart';
 
 class SidebarItem {
   final String title;
@@ -163,6 +164,10 @@ class _CustomSidebarState extends State<CustomSidebar> {
                       ),
                     ],
                   ),
+                ),
+                const FullscreenToggleButton(
+                  color: Colors.white70,
+                  size: 20,
                 ),
                 IconButton(
                   tooltip: 'Salir de la sección',

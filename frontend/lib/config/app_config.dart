@@ -11,7 +11,8 @@ class AppConfig {
   // 1. CONEXIÓN AL BACKEND / SERVIDOR
   // ──────────────────────────────────────────────────────────────────────────
   /// URL del servidor API (sin barra final '/').
-  static const String serverUrl = 'https://tienda.comunidadfantino.site';
+  // static const String serverUrl = 'https://tienda.comunidadfantino.site';
+  static const String serverUrl = 'http://127.0.0.1:8000';
 
   /// Versión de la API backend (generalmente '/api/v2')
   static const String apiVersion = '/api/v2';
@@ -26,17 +27,17 @@ class AppConfig {
   // 2. DATOS DE LA EMPRESA / CLIENTE (Aparecen en Facturas, Tickets y Reportes)
   // ──────────────────────────────────────────────────────────────────────────
   /// Nombre comercial / Razón social
-  static const String nombreEmpresa = 'Fundación Centro de Evangelización';
+  static const String nombreEmpresa =
+      'Fundación Centro de Evangelización Padre Fantino';
 
   /// Subtítulo / Slogan de la empresa
-  static const String slogan = 'Padre Fantino';
+  static const String slogan = '';
 
   /// Nombre corto para tickets térmicos y encabezados compactos
-  static const String shortName = 'Centro Evangelización';
+  static const String shortName = 'C.E.P.F';
 
   /// Descripción institucional
-  static const String description =
-      'Sistema integrado para la gestión de cuadres, intenciones y administración general.';
+  static const String description = 'Sistema POS Venta';
 
   /// RNC o Cédula fiscal de la empresa
   static const String rnc = '4-30-37238-2';
@@ -56,8 +57,8 @@ class AppConfig {
   static const String whatsapp = '(809) 697-8028';
 
   /// Correo y sitio web
-  static const String correo = 'contacto@comunidadfantino.site';
-  static const String sitioWeb = 'https://comunidadfantino.site';
+  static const String correo = '----';
+  static const String sitioWeb = '---';
 
   // ──────────────────────────────────────────────────────────────────────────
   // 3. IDENTIDAD VISUAL (LOGOS Y FONDOS)
@@ -78,7 +79,7 @@ class AppConfig {
   // 4. DATOS DEL SOFTWARE Y DESARROLLADOR
   // ──────────────────────────────────────────────────────────────────────────
   /// Nombre comercial del software
-  static const String appName = 'Centro Evangelización';
+  static const String appName = 'Menuxa';
 
   /// Versión actual del software
   static const String appVersion = '2.0.0';
@@ -87,7 +88,7 @@ class AppConfig {
   static const String developerName = 'Lwader-Soft';
 
   /// Sitio web del desarrollador
-  static const String developerWeb = 'www.lwader-soft.com';
+  static const String developerWeb = '------';
 
   /// Crédito en el ticket impreso (al final de la factura)
   static const String ticketCredit = 'Powered by $developerName';

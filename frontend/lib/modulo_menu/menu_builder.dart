@@ -8,9 +8,9 @@ import 'package:sistema_restaurante/widgets/custom_sidebar.dart';
 // Importaciones de pantallas y dialogos
 import 'package:sistema_restaurante/screens/profile_screen.dart';
 import 'package:sistema_restaurante/facturacion/screens/add_factura.dart';
-import 'package:sistema_restaurante/pedidos/screens/pedidos_screen.dart';
-import 'package:sistema_restaurante/pedidos/screens/add_pedido.dart';
-import 'package:sistema_restaurante/pedidos/providers/pedidos_provider.dart';
+// import 'package:sistema_restaurante/pedidos/screens/pedidos_screen.dart';
+// import 'package:sistema_restaurante/pedidos/screens/add_pedido.dart';
+// import 'package:sistema_restaurante/pedidos/providers/pedidos_provider.dart';
 import 'package:sistema_restaurante/modulo_mesas/screens/mesas_screen.dart';
 import 'package:sistema_restaurante/modulo_cliente/screens/screen_client_admin.dart';
 import 'package:sistema_restaurante/modulo_producto/screens/screen_productos.dart';
@@ -23,6 +23,7 @@ import 'package:sistema_restaurante/modulo_compras/screens/proveedores_screen.da
 import 'package:sistema_restaurante/modulo_compras/screens/cxp_list_screen.dart';
 import '../modulo_compras/screens/historial_pagos_cxp_screen.dart';
 import '../modulo_compras/screens/registrar_gasto_screen.dart';
+import '../modulo_compras/screens/gastos_list_screen.dart';
 import '../modulo_cxc/screens/cxc_list_screen.dart';
 import '../modulo_cxc/screens/historial_pagos_cxc_screen.dart';
 import '../modulo_finanzas/screens/bancos_dashboard_screen.dart';
@@ -90,31 +91,31 @@ class MenuBuilder {
       ),
 
       // 3. PEDIDOS
-      SidebarItem(
-        title: 'Pedidos',
-        icon: Icons.restaurant_menu_rounded,
-        subItems: [
-          SidebarSubItem(
-            title: 'Nuevo Pedido',
-            onTap: () async {
-              final result = await Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const CrearPedidoPage()),
-              );
-              if (result == true) {
-                ref.read(pedidosProvider).fetchPedidos();
-              }
-            },
-          ),
-          SidebarSubItem(
-            title: 'Gestión de Pedidos',
-            onTap: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const PedidosScreen()),
-            ),
-          ),
-        ],
-      ),
+      // SidebarItem(
+      //   title: 'Pedidos',
+      //   icon: Icons.restaurant_menu_rounded,
+      //   subItems: [
+      //     SidebarSubItem(
+      //       title: 'Nuevo Pedido',
+      //       onTap: () async {
+      //         final result = await Navigator.push(
+      //           context,
+      //           MaterialPageRoute(builder: (_) => const CrearPedidoPage()),
+      //         );
+      //         if (result == true) {
+      //           ref.read(pedidosProvider).fetchPedidos();
+      //         }
+      //       },
+      //     ),
+      //     SidebarSubItem(s
+      //       title: 'Gestión de Pedidos',
+      //       onTap: () => Navigator.push(
+      //         context,
+      //         MaterialPageRoute(builder: (_) => const PedidosScreen()),
+      //       ),
+      //     ),
+      //   ],
+      // ),
 
       // 3. VENTAS
       if (auth.hasPermission('ver_facturas') ||
@@ -401,10 +402,20 @@ class MenuBuilder {
                   );
                 },
               ),
-            if (!isCajero &&
-                (auth.hasPermission('ver_gastos') || isAdmin || isContador))
+            if (isAdmin || isContador) ...[
               SidebarSubItem(
-                title: 'Gastos',
+                title: 'Gestión de Gastos',
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const GastosListScreen(),
+                    ),
+                  );
+                },
+              ),
+              SidebarSubItem(
+                title: 'Registrar Gasto',
                 onTap: () {
                   Navigator.push(
                     context,
@@ -414,6 +425,7 @@ class MenuBuilder {
                   );
                 },
               ),
+            ],
           ],
         ),
 

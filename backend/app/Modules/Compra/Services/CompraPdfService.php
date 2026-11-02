@@ -19,7 +19,7 @@ class CompraPdfService
      */
     public function buildFilteredQuery(array $filters): Builder
     {
-        $query = Compra::with(['proveedor', 'usuario', 'detalles.producto'])
+        $query = Compra::with(['proveedor', 'usuario', 'detalles.producto', 'detalles.cuentaContable', 'cuentaPorPagar', 'asiento.detalles.cuenta'])
             ->orderBy('fecha_compra', 'desc')
             ->orderBy('id', 'desc');
 
@@ -43,6 +43,27 @@ class CompraPdfService
             $query->where('proveedor_id', $filters['proveedor_id']);
         }
 
+        if (isset($filters['es_gasto']) && $filters['es_gasto'] !== '') {
+            $esGasto = filter_var($filters['es_gasto'], FILTER_VALIDATE_BOOLEAN);
+            if ($esGasto) {
+                // Gastos operativos: detalles sin producto_id
+                $query->whereHas('detalles', function (Builder $d) {
+                    $d->whereNull('producto_id');
+                });
+            } else {
+                // Compras de inventario: detalles con producto_id
+                $query->whereHas('detalles', function (Builder $d) {
+                    $d->whereNotNull('producto_id');
+                });
+            }
+        }
+
+        if (!empty($filters['cuenta_contable_id'])) {
+            $query->whereHas('detalles', function (Builder $d) use ($filters) {
+                $d->where('cuenta_contable_id', $filters['cuenta_contable_id']);
+            });
+        }
+
         if (!empty($filters['search'])) {
             $search = strtolower(trim((string)$filters['search']));
             $query->where(function (Builder $q) use ($search) {
@@ -51,7 +72,10 @@ class CompraPdfService
                   ->orWhereRaw('LOWER(notas) LIKE ?', ["%{$search}%"])
                   ->orWhereHas('proveedor', function (Builder $p) use ($search) {
                       $p->whereRaw('LOWER(nombre) LIKE ?', ["%{$search}%"])
-                        ->orWhereRaw('LOWER(rnc_cedula) LIKE ?', ["%{$search}%"]);
+                        ->orWhereRaw('LOWER(rnc) LIKE ?', ["%{$search}%"]);
+                  })
+                  ->orWhereHas('detalles', function (Builder $d) use ($search) {
+                      $d->whereRaw('LOWER(descripcion) LIKE ?', ["%{$search}%"]);
                   });
             });
         }
@@ -161,11 +185,11 @@ class CompraPdfService
     private function prepareCompanyData(array $companyData): array
     {
         return [
-            'nombre'    => $companyData['company_name'] ?? 'Tu Restaurante Favorito',
-            'rnc'       => $companyData['company_rnc'] ?? '123456789',
-            'direccion' => $companyData['company_address'] ?? 'Santo Domingo, República Dominicana',
-            'telefono'  => $companyData['company_phone'] ?? '(809) 555-5555',
-            'email'     => $companyData['company_email'] ?? '',
+            'nombre'    => !empty($companyData['company_name']) ? $companyData['company_name'] : config('company.nombre'),
+            'rnc'       => !empty($companyData['company_rnc']) ? $companyData['company_rnc'] : config('company.rnc'),
+            'direccion' => !empty($companyData['company_address']) ? $companyData['company_address'] : config('company.direccion'),
+            'telefono'  => !empty($companyData['company_phone']) ? $companyData['company_phone'] : config('company.telefono'),
+            'email'     => !empty($companyData['company_email']) ? $companyData['company_email'] : config('company.email'),
         ];
     }
 
@@ -174,18 +198,11 @@ class CompraPdfService
      */
     private function getCompanyLogoBase64(): string
     {
-        $possiblePaths = [
-            public_path('images/app_icon.png'),
-            public_path('logo.png'),
-            public_path('logo.jpeg'),
-        ];
-
-        foreach ($possiblePaths as $logoPath) {
-            if (file_exists($logoPath)) {
-                $type = pathinfo($logoPath, PATHINFO_EXTENSION);
-                $data = file_get_contents($logoPath);
-                return 'data:image/' . $type . ';base64,' . base64_encode($data);
-            }
+        $logoPath = public_path('images/app_icon.png');
+        if (file_exists($logoPath)) {
+            $type = pathinfo($logoPath, PATHINFO_EXTENSION);
+            $data = file_get_contents($logoPath);
+            return 'data:image/' . $type . ';base64,' . base64_encode($data);
         }
 
         return '';
