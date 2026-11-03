@@ -10,6 +10,8 @@ import 'widgets/factura_detalle_panel.dart';
 import '../../modulo_cliente/widgets/paginador.dart';
 import '../../widgets/custom_loading.dart';
 import '../../widgets/custom_text_field.dart';
+import 'package:url_launcher/url_launcher.dart';
+import '../../utils/constants.dart';
 
 class GestionDocumentosScreen extends ConsumerStatefulWidget {
   const GestionDocumentosScreen({super.key});
@@ -27,6 +29,38 @@ class _GestionDocumentosScreenState
   final _scrollController = ScrollController();
 
   Factura? _selectedFactura;
+  bool _isExportingPdf = false;
+
+  Future<void> _exportarPdfReporte() async {
+    final token = ref.read(authProvider).token;
+    if (token == null) return;
+    setState(() => _isExportingPdf = true);
+    try {
+      final notifier = ref.read(facturacionHistorialProvider.notifier);
+      final pdfUrlPath = await notifier.obtenerPdfReporteUrl(token);
+
+      if (pdfUrlPath != null && pdfUrlPath.isNotEmpty) {
+        final urlToLaunch = Uri.parse('$hostName$pdfUrlPath');
+        if (await canLaunchUrl(urlToLaunch)) {
+          await launchUrl(urlToLaunch, mode: LaunchMode.externalApplication);
+        } else if (mounted) {
+          showToast(context, 'No se pudo abrir el PDF', bgColor: Colors.orange);
+        }
+      } else if (mounted) {
+        showToast(
+          context,
+          'No se pudo generar el reporte en PDF',
+          bgColor: Colors.red,
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        showToast(context, 'Error al exportar: $e', bgColor: Colors.red);
+      }
+    } finally {
+      if (mounted) setState(() => _isExportingPdf = false);
+    }
+  }
 
   @override
   void initState() {
@@ -93,6 +127,42 @@ class _GestionDocumentosScreenState
         ),
         iconTheme: const IconThemeData(color: AppColors.azulOscuro),
         actions: [
+          SizedBox(
+            height: 34,
+            child: OutlinedButton.icon(
+              onPressed: _isExportingPdf ? null : _exportarPdfReporte,
+              icon: _isExportingPdf
+                  ? const SizedBox(
+                      width: 14,
+                      height: 14,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: AppColors.primary,
+                      ),
+                    )
+                  : const Icon(
+                      Icons.picture_as_pdf_outlined,
+                      size: 16,
+                      color: AppColors.primary,
+                    ),
+              label: const Text(
+                'Reporte PDF',
+                style: TextStyle(
+                  fontSize: 11.5,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.primary,
+                ),
+              ),
+              style: OutlinedButton.styleFrom(
+                side: const BorderSide(color: AppColors.primary),
+                padding: const EdgeInsets.symmetric(horizontal: 10),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
           IconButton(
             icon: const Icon(Icons.refresh),
             tooltip: 'Recargar Facturas',

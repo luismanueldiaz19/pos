@@ -213,4 +213,33 @@ class FacturaController extends Controller {
             'message' => 'Factura pagada'
         ]);
     }
+
+    /**
+     * Genera un token temporal para abrir el reporte de facturación en el navegador mediante /d/{token}.
+     */
+    public function generarTokenReporte(Request $request, \App\Services\FacturaPdfService $facturaPdfService)
+    {
+        $companyData = [
+            'company_name'    => $request->company_name,
+            'company_rnc'     => $request->company_rnc,
+            'company_address' => $request->company_address,
+            'company_phone'   => $request->company_phone,
+        ];
+
+        $token = $facturaPdfService->generarTokenReporte(
+            $request->all(),
+            $companyData,
+            $request->user()?->name,
+            $request->user()?->id
+        );
+
+        return response()->json([
+            'status'  => true,
+            'message' => 'Enlace para reporte generado correctamente',
+            'data'    => [
+                'token'   => $token,
+                'pdf_url' => "/d/{$token}",
+            ]
+        ]);
+    }
 }

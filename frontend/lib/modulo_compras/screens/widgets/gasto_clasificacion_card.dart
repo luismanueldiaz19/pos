@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../../palletes/app_colors.dart';
 import '../../../../widgets/custom_text_field.dart';
 import '../../../../model/catalogo_cuenta_model.dart';
+import '../../../../widgets/buscador_cuenta_gasto_dialog.dart';
 
 class GastoClasificacionCard extends StatelessWidget {
   final List<CatalogoCuentaModel> cuentas;
@@ -23,6 +24,14 @@ class GastoClasificacionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    CatalogoCuentaModel? cuentaSeleccionada;
+    if (selectedCuentaId != null) {
+      final match = cuentas.where((c) => c.id == selectedCuentaId).toList();
+      if (match.isNotEmpty) {
+        cuentaSeleccionada = match.first;
+      }
+    }
+
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
@@ -40,16 +49,54 @@ class GastoClasificacionCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Row(
+          Row(
             children: [
-              Icon(Icons.account_tree_outlined, size: 16, color: AppColors.primary),
-              SizedBox(width: 6),
-              Text(
-                '1. Clasificación Contable (Clase 6)',
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF1E293B),
+              const Icon(Icons.account_tree_outlined, size: 16, color: AppColors.primary),
+              const SizedBox(width: 6),
+              const Expanded(
+                child: Text(
+                  '1. Clasificación Contable (Clase 6)',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF1E293B),
+                  ),
+                ),
+              ),
+              InkWell(
+                onTap: () async {
+                  final cuenta = await BuscadorCuentaGastoDialog.show(
+                    context,
+                    cuentas: cuentas,
+                    selectedId: selectedCuentaId,
+                  );
+                  if (cuenta != null) {
+                    onCuentaSelected(cuenta.id);
+                  }
+                },
+                borderRadius: BorderRadius.circular(6),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withValues(alpha: 0.08),
+                    borderRadius: BorderRadius.circular(6),
+                    border: Border.all(color: AppColors.primary.withValues(alpha: 0.2)),
+                  ),
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.add, size: 13, color: AppColors.primary),
+                      SizedBox(width: 3),
+                      Text(
+                        'Nueva Cuenta',
+                        style: TextStyle(
+                          fontSize: 10.5,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.primary,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ],
@@ -74,48 +121,107 @@ class GastoClasificacionCard extends StatelessWidget {
           ),
           const SizedBox(height: 10),
 
-          // Selector de cuenta
-          Text(
-            'Cuenta Contable de Gasto',
-            style: TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.w600,
-              color: Colors.grey.shade700,
-            ),
+          // Selector de cuenta con Buscador Rápido (soporta 200+ cuentas fluidas)
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Cuenta Contable de Gasto',
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.grey.shade700,
+                ),
+              ),
+              Text(
+                '${cuentas.length} cuentas disponibles',
+                style: TextStyle(fontSize: 10, color: Colors.grey.shade500),
+              ),
+            ],
           ),
           const SizedBox(height: 4),
-          Container(
-            height: 38,
-            padding: const EdgeInsets.symmetric(horizontal: 10),
-            decoration: BoxDecoration(
-              color: Colors.grey.shade50,
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(
-                color: selectedCuentaId == null
-                    ? Colors.grey.shade200
-                    : AppColors.azulOscuro.withValues(alpha: 0.5),
-              ),
-            ),
-            child: DropdownButtonHideUnderline(
-              child: DropdownButton<int>(
-                isExpanded: true,
-                value: selectedCuentaId,
-                hint: const Text(
-                  'Seleccione cuenta contable de gasto...',
-                  style: TextStyle(fontSize: 12, color: Colors.grey),
+
+          // Selector táctil con buscador
+          InkWell(
+            onTap: () async {
+              final cuenta = await BuscadorCuentaGastoDialog.show(
+                context,
+                cuentas: cuentas,
+                selectedId: selectedCuentaId,
+              );
+              if (cuenta != null) {
+                onCuentaSelected(cuenta.id);
+              }
+            },
+            borderRadius: BorderRadius.circular(8),
+            child: Container(
+              height: 40,
+              padding: const EdgeInsets.symmetric(horizontal: 10),
+              decoration: BoxDecoration(
+                color: Colors.grey.shade50,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color: cuentaSeleccionada != null
+                      ? AppColors.primary.withValues(alpha: 0.5)
+                      : Colors.grey.shade300,
                 ),
-                icon: const Icon(Icons.keyboard_arrow_down, size: 18),
-                items: cuentas.map((c) {
-                  return DropdownMenuItem<int>(
-                    value: c.id,
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.account_tree_outlined,
+                    size: 16,
+                    color: cuentaSeleccionada != null
+                        ? AppColors.primary
+                        : Colors.grey.shade600,
+                  ),
+                  const SizedBox(width: 8),
+                  if (cuentaSeleccionada != null) ...[
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: AppColors.primary.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Text(
+                        cuentaSeleccionada.codigo,
+                        style: const TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.primary,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                  ],
+                  Expanded(
                     child: Text(
-                      '${c.codigo} - ${c.nombre}',
-                      style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
+                      cuentaSeleccionada != null
+                          ? cuentaSeleccionada.nombre
+                          : 'Buscar cuenta de gasto (ej: luz, combustible, 6.2)...',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: cuentaSeleccionada != null
+                            ? FontWeight.w600
+                            : FontWeight.normal,
+                        color: cuentaSeleccionada != null
+                            ? const Color(0xFF1E293B)
+                            : Colors.grey.shade500,
+                      ),
                       overflow: TextOverflow.ellipsis,
                     ),
-                  );
-                }).toList(),
-                onChanged: onCuentaSelected,
+                  ),
+                  if (cuentaSeleccionada != null)
+                    IconButton(
+                      icon: const Icon(Icons.close, size: 14, color: Colors.grey),
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                      tooltip: 'Limpiar selección',
+                      onPressed: () => onCuentaSelected(null),
+                    )
+                  else
+                    const Icon(Icons.search, size: 16, color: Colors.grey),
+                ],
               ),
             ),
           ),
@@ -139,22 +245,22 @@ class GastoClasificacionCard extends StatelessWidget {
       padding: const EdgeInsets.only(right: 6),
       child: InkWell(
         onTap: () => onCategoriaChipChanged(key),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(20),
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
           decoration: BoxDecoration(
-            color: isSelected ? AppColors.azulOscuro : Colors.grey.shade100,
-            borderRadius: BorderRadius.circular(16),
+            color: isSelected ? AppColors.primary : Colors.grey.shade100,
+            borderRadius: BorderRadius.circular(20),
             border: Border.all(
-              color: isSelected ? AppColors.azulOscuro : Colors.grey.shade300,
+              color: isSelected ? AppColors.primary : Colors.grey.shade300,
             ),
           ),
           child: Text(
             label,
             style: TextStyle(
-              fontSize: 11,
-              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-              color: isSelected ? Colors.white : Colors.black87,
+              fontSize: 10.5,
+              fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+              color: isSelected ? Colors.white : Colors.grey.shade800,
             ),
           ),
         ),
@@ -162,4 +268,3 @@ class GastoClasificacionCard extends StatelessWidget {
     );
   }
 }
-

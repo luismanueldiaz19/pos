@@ -5,7 +5,7 @@ import '../../../model/factura.dart';
 import '../../../palletes/app_colors.dart';
 import '../../../utils/helpers.dart';
 import '../../services/printer_service.dart';
-import '../nota_credito_dialog.dart';
+// import '../nota_credito_dialog.dart';
 
 class FacturaDetallePanel extends StatefulWidget {
   final Factura? factura;
@@ -670,17 +670,18 @@ class _FacturaDetallePanelState extends State<FacturaDetallePanel>
                     }
                   },
                 ),
-              _buildActionButton(
-                icon: Icons.remove_circle_outline,
-                label: "Nota de Crédito",
-                color: Colors.purple.shade700,
-                onTap: () {
-                  showDialog(
-                    context: context,
-                    builder: (_) => NotaCreditoDialog(factura: f),
-                  );
-                },
-              ),
+              // TODO: Funcionalidad temporalmente comentada
+              // _buildActionButton(
+              //   icon: Icons.remove_circle_outline,
+              //   label: "Nota de Crédito",
+              //   color: Colors.purple.shade700,
+              //   onTap: () {
+              //     showDialog(
+              //       context: context,
+              //       builder: (_) => NotaCreditoDialog(factura: f),
+              //     );
+              //   },
+              // ),
               _buildActionButton(
                 icon: Icons.add_circle_outline,
                 label: "Nota de Débito",
@@ -705,14 +706,15 @@ class _FacturaDetallePanelState extends State<FacturaDetallePanel>
                   );
                 },
               ),
-              _buildActionButton(
-                icon: Icons.cancel_outlined,
-                label: "Anular Factura",
-                color: Colors.red.shade700,
-                onTap: () {
-                  _mostrarDialogoAnulacion(context, f);
-                },
-              ),
+              // TODO: Funcionalidad de anulación temporalmente comentada
+              // _buildActionButton(
+              //   icon: Icons.cancel_outlined,
+              //   label: "Anular Factura",
+              //   color: Colors.red.shade700,
+              //   onTap: () {
+              //     _mostrarDialogoAnulacion(context, f);
+              //   },
+              // ),
             ],
           ),
         ],
@@ -771,6 +773,7 @@ class _FacturaDetallePanelState extends State<FacturaDetallePanel>
     );
   }
 
+  /*
   void _mostrarDialogoAnulacion(BuildContext context, Factura f) {
     showDialog(
       context: context,
@@ -813,6 +816,7 @@ class _FacturaDetallePanelState extends State<FacturaDetallePanel>
       ),
     );
   }
+  */
 
   Widget _buildTabTotalesPeriodo() {
     final resumen = widget.resumen;

@@ -242,9 +242,9 @@ class _NotaCreditoDialogState extends ConsumerState<NotaCreditoDialog> {
       final total = double.tryParse((notaData['total'] ?? 0).toString()) ?? 0;
 
       final res = await ThermalPrinterService.instance.imprimirNotaCredito(
-        nombreNegocio: 'RESTAURANTE & BAR',
-        rncOCedula: '131-00000-0',
-        direccion: 'SANTIAGO, REPÚBLICA DOMINICANA',
+        nombreNegocio: Company.current.nombre,
+        rncOCedula: Company.current.rnc,
+        direccion: Company.current.direccionCompleta,
         ncfNota: (notaData['ncf'] ?? 'N/A').toString(),
         ncfFacturaAfectada: widget.factura.ncf ?? 'N/A',
         numeroFactura: widget.factura.id.toString(),

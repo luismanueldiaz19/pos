@@ -6,7 +6,9 @@ namespace App\Modules\Shared\Http\Controllers;
 
 use App\Http\Controllers\Controller;
 use App\Models\Cotizacion;
+use App\Models\User;
 use App\Modules\Compra\Services\CompraPdfService;
+use App\Services\FacturaPdfService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -44,6 +46,18 @@ class DocumentLinkController extends Controller
             return $pdf->stream('factura_compra_' . $data['id'] . '.pdf');
         }
 
+        if ($data['type'] === 'facturas_reporte') {
+            $facturaPdfService = app(FacturaPdfService::class);
+            $user = !empty($data['userId']) ? User::find($data['userId']) : null;
+            $pdf = $facturaPdfService->generarReportePdf(
+                $data['filters'] ?? [],
+                $data['companyData'] ?? [],
+                $data['usuarioName'] ?? null,
+                $user
+            );
+            return $pdf->stream('reporte_facturas_' . now()->format('Ymd_His') . '.pdf');
+        }
+
         abort(404, 'Tipo de documento no soportado.');
     }
 
@@ -59,7 +73,15 @@ class DocumentLinkController extends Controller
             'email'     => !empty($companyData['company_email']) ? $companyData['company_email'] : config('company.email'),
         ];
 
-        $pdf = Pdf::loadView('pdf.cotizacion', compact('cotizacion', 'company'));
+        $base64Logo = null;
+        $logoPath = public_path('images/app_icon.png');
+        if (file_exists($logoPath)) {
+            $type = pathinfo($logoPath, PATHINFO_EXTENSION);
+            $data = file_get_contents($logoPath);
+            $base64Logo = 'data:image/' . $type . ';base64,' . base64_encode($data);
+        }
+
+        $pdf = Pdf::loadView('pdf.cotizacion', compact('cotizacion', 'company', 'base64Logo'));
 
         return $pdf->stream('cotizacion_'.$cotizacion->id.'.pdf');
     }

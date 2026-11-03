@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../../../palletes/app_colors.dart';
 import '../../../../widgets/custom_text_field.dart';
+import '../../../../widgets/buscador_proveedor_dialog.dart';
 import '../../models/proveedor.dart';
 
 class GastoBeneficiarioCard extends StatelessWidget {
@@ -34,6 +35,14 @@ class GastoBeneficiarioCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    Proveedor? provSeleccionado;
+    if (selectedProveedorId != null) {
+      final match = proveedores.where((p) => p.id == selectedProveedorId).toList();
+      if (match.isNotEmpty) {
+        provSeleccionado = match.first;
+      }
+    }
+
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
@@ -53,7 +62,7 @@ class GastoBeneficiarioCard extends StatelessWidget {
         children: [
           const Row(
             children: [
-              Icon(Icons.receipt_long_outlined, size: 16, color: Color(0xFF0284C7)),
+              Icon(Icons.badge_outlined, size: 16, color: AppColors.azulOscuro),
               SizedBox(width: 6),
               Text(
                 '2. Beneficiario y Comprobante',
@@ -67,14 +76,14 @@ class GastoBeneficiarioCard extends StatelessWidget {
           ),
           const Divider(height: 16, color: Color(0xFFF1F5F9)),
 
-          // Selector de modalidad: Gasto Menor vs Proveedor Formal
+          // Toggle Tipo Beneficiario
           Row(
             children: [
               Expanded(
                 child: _buildOptionButton(
                   selected: esGastoMenor,
                   label: '⚡ Gasto Menor / Informal',
-                  icon: Icons.flash_on_outlined,
+                  icon: Icons.bolt,
                   onTap: () => onTipoBeneficiarioChanged(true),
                 ),
               ),
@@ -91,7 +100,7 @@ class GastoBeneficiarioCard extends StatelessWidget {
           ),
           const SizedBox(height: 10),
 
-          // Nombre beneficiario o dropdown de proveedores
+          // Nombre beneficiario o Selector con Buscador de proveedores
           if (esGastoMenor)
             CustomTextField(
               controller: beneficiarioCtrl,
@@ -100,43 +109,89 @@ class GastoBeneficiarioCard extends StatelessWidget {
               prefixIcon: Icons.storefront_outlined,
             )
           else ...[
-            Text(
-              'Proveedor Formal Registrado',
-              style: TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.w600,
-                color: Colors.grey.shade700,
-              ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Proveedor Formal Registrado',
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.grey.shade700,
+                  ),
+                ),
+                Text(
+                  '${proveedores.length} proveedores disponibles',
+                  style: TextStyle(fontSize: 10, color: Colors.grey.shade500),
+                ),
+              ],
             ),
             const SizedBox(height: 4),
-            Container(
-              height: 38,
-              padding: const EdgeInsets.symmetric(horizontal: 10),
-              decoration: BoxDecoration(
-                color: Colors.grey.shade50,
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.grey.shade200),
-              ),
-              child: DropdownButtonHideUnderline(
-                child: DropdownButton<int>(
-                  isExpanded: true,
-                  value: selectedProveedorId,
-                  hint: const Text(
-                    'Seleccione proveedor formal...',
-                    style: TextStyle(fontSize: 12, color: Colors.grey),
+
+            // Selector táctil con Buscador Virtualizado (Soporta 5,000+ proveedores)
+            InkWell(
+              onTap: () async {
+                final prov = await BuscadorProveedorDialog.show(
+                  context,
+                  proveedores: proveedores,
+                  selectedId: selectedProveedorId,
+                  title: 'Seleccionar Proveedor del Gasto',
+                );
+                if (prov != null) {
+                  onProveedorSelected(prov.id);
+                }
+              },
+              borderRadius: BorderRadius.circular(8),
+              child: Container(
+                height: 40,
+                padding: const EdgeInsets.symmetric(horizontal: 10),
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade50,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color: provSeleccionado != null
+                        ? AppColors.primary.withValues(alpha: 0.5)
+                        : Colors.grey.shade300,
                   ),
-                  icon: const Icon(Icons.keyboard_arrow_down, size: 18),
-                  items: proveedores.map((p) {
-                    return DropdownMenuItem<int>(
-                      value: p.id,
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.business_outlined,
+                      size: 16,
+                      color: provSeleccionado != null
+                          ? AppColors.primary
+                          : Colors.grey.shade600,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
                       child: Text(
-                        '${p.nombre} ${p.rnc != null ? "(${p.rnc})" : ""}',
-                        style: const TextStyle(fontSize: 12),
+                        provSeleccionado != null
+                            ? '${provSeleccionado.nombre} ${provSeleccionado.rnc != null ? "(${provSeleccionado.rnc})" : ""}'
+                            : 'Buscar o seleccionar proveedor...',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: provSeleccionado != null
+                              ? FontWeight.w600
+                              : FontWeight.normal,
+                          color: provSeleccionado != null
+                              ? const Color(0xFF1E293B)
+                              : Colors.grey.shade500,
+                        ),
                         overflow: TextOverflow.ellipsis,
                       ),
-                    );
-                  }).toList(),
-                  onChanged: onProveedorSelected,
+                    ),
+                    if (provSeleccionado != null)
+                      IconButton(
+                        icon: const Icon(Icons.close, size: 14, color: Colors.grey),
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(),
+                        tooltip: 'Limpiar selección',
+                        onPressed: () => onProveedorSelected(null),
+                      )
+                    else
+                      const Icon(Icons.search, size: 16, color: Colors.grey),
+                  ],
                 ),
               ),
             ),
@@ -163,12 +218,12 @@ class GastoBeneficiarioCard extends StatelessWidget {
               ),
               const SizedBox(width: 8),
               Expanded(
-                flex: 2,
+                flex: 3,
                 child: CustomTextField(
                   controller: ncfCtrl,
                   label: 'NCF (Opcional)',
                   hintText: 'B01... / B13...',
-                  prefixIcon: Icons.confirmation_number_outlined,
+                  prefixIcon: Icons.receipt_long_outlined,
                 ),
               ),
               const SizedBox(width: 8),
@@ -192,11 +247,19 @@ class GastoBeneficiarioCard extends StatelessWidget {
                           context: context,
                           initialDate: fechaGasto,
                           firstDate: DateTime(2020),
-                          lastDate: DateTime(2035),
+                          lastDate: DateTime.now().add(const Duration(days: 1)),
+                          builder: (context, child) {
+                            return Theme(
+                              data: Theme.of(context).copyWith(
+                                colorScheme: const ColorScheme.light(
+                                  primary: AppColors.primary,
+                                ),
+                              ),
+                              child: child!,
+                            );
+                          },
                         );
-                        if (picked != null) {
-                          onFechaSelected(picked);
-                        }
+                        if (picked != null) onFechaSelected(picked);
                       },
                       child: Container(
                         height: 38,
@@ -207,13 +270,14 @@ class GastoBeneficiarioCard extends StatelessWidget {
                           border: Border.all(color: Colors.grey.shade200),
                         ),
                         child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Text(
-                              DateFormat('dd/MM/yyyy').format(fechaGasto),
-                              style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
+                            Expanded(
+                              child: Text(
+                                DateFormat('dd/MM/yyyy').format(fechaGasto),
+                                style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
+                              ),
                             ),
-                            const Icon(Icons.calendar_today, size: 14, color: AppColors.primary),
+                            const Icon(Icons.calendar_today_outlined, size: 14, color: AppColors.primary),
                           ],
                         ),
                       ),
@@ -236,16 +300,17 @@ class GastoBeneficiarioCard extends StatelessWidget {
   }) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(6),
-      child: Container(
-        height: 34,
-        padding: const EdgeInsets.symmetric(horizontal: 6),
-        alignment: Alignment.center,
+      borderRadius: BorderRadius.circular(8),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 150),
+        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 10),
         decoration: BoxDecoration(
-          color: selected ? const Color(0xFFEFF6FF) : Colors.white,
-          borderRadius: BorderRadius.circular(6),
+          color: selected
+              ? AppColors.primary.withValues(alpha: 0.08)
+              : Colors.grey.shade50,
+          borderRadius: BorderRadius.circular(8),
           border: Border.all(
-            color: selected ? AppColors.azulOscuro : Colors.grey.shade300,
+            color: selected ? AppColors.primary : Colors.grey.shade200,
             width: selected ? 1.5 : 1.0,
           ),
         ),
@@ -255,16 +320,16 @@ class GastoBeneficiarioCard extends StatelessWidget {
             Icon(
               icon,
               size: 14,
-              color: selected ? AppColors.azulOscuro : Colors.grey.shade600,
+              color: selected ? AppColors.primary : Colors.grey.shade600,
             ),
-            const SizedBox(width: 4),
+            const SizedBox(width: 6),
             Flexible(
               child: Text(
                 label,
                 style: TextStyle(
                   fontSize: 11,
-                  fontWeight: selected ? FontWeight.bold : FontWeight.normal,
-                  color: selected ? AppColors.azulOscuro : Colors.grey.shade700,
+                  fontWeight: selected ? FontWeight.bold : FontWeight.w500,
+                  color: selected ? AppColors.primary : Colors.grey.shade700,
                 ),
                 overflow: TextOverflow.ellipsis,
               ),

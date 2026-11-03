@@ -71,18 +71,19 @@ class FacturacionHistorialState {
   }
 }
 
-class FacturacionHistorialNotifier extends StateNotifier<FacturacionHistorialState> {
+class FacturacionHistorialNotifier
+    extends StateNotifier<FacturacionHistorialState> {
   final FacturacionService _service = FacturacionService();
 
   FacturacionHistorialNotifier() : super(FacturacionHistorialState());
 
   Future<void> fetchHistorial(String token) async {
     state = state.copyWith(isLoading: true, clearError: true);
-    
+
     // Preparar filtros incluyendo paginación
     final queryFilters = Map<String, String>.from(state.filters);
     queryFilters['page'] = state.currentPage.toString();
-    
+
     final result = await _service.getHistorial(
       token: token,
       filters: queryFilters,
@@ -91,12 +92,14 @@ class FacturacionHistorialNotifier extends StateNotifier<FacturacionHistorialSta
     if (result['success']) {
       final dataObj = result['data'] ?? {};
       final List<dynamic> dataList = dataObj['data'] ?? [];
-      
+
       final int current = dataObj['current_page'] ?? 1;
       final int last = dataObj['last_page'] ?? 1;
       final int totalItems = dataObj['total'] ?? 0;
-      
-      final List<Factura> facturas = dataList.map((json) => Factura.fromJson(json)).toList();
+
+      final List<Factura> facturas = dataList
+          .map((json) => Factura.fromJson(json))
+          .toList();
       state = state.copyWith(
         isLoading: false,
         historial: facturas,
@@ -106,14 +109,15 @@ class FacturacionHistorialNotifier extends StateNotifier<FacturacionHistorialSta
         total: totalItems,
       );
     } else {
-      state = state.copyWith(
-        isLoading: false,
-        error: result['message'],
-      );
+      state = state.copyWith(isLoading: false, error: result['message']);
     }
   }
 
-  void updateFilters(String token, Map<String, String> newFilters, {bool replace = false}) {
+  void updateFilters(
+    String token,
+    Map<String, String> newFilters, {
+    bool replace = false,
+  }) {
     state = state.copyWith(
       filters: replace ? newFilters : {...state.filters, ...newFilters},
       currentPage: 1, // Resetear paginación al cambiar filtros
@@ -131,6 +135,10 @@ class FacturacionHistorialNotifier extends StateNotifier<FacturacionHistorialSta
     fetchHistorial(token);
   }
 
+  Future<String?> obtenerPdfReporteUrl(String token) async {
+    return await _service.getReportePdfUrl(token, filters: state.filters);
+  }
+
   Future<Map<String, dynamic>?> generarNotaCredito(
     String token,
     int facturaId,
@@ -139,7 +147,12 @@ class FacturacionHistorialNotifier extends StateNotifier<FacturacionHistorialSta
   ) async {
     state = state.copyWith(isLoading: true, clearError: true);
     try {
-      final data = await _service.generarNotaCredito(token, facturaId, detalles, motivo);
+      final data = await _service.generarNotaCredito(
+        token,
+        facturaId,
+        detalles,
+        motivo,
+      );
       await fetchHistorial(token);
       return data;
     } catch (e) {
@@ -150,6 +163,9 @@ class FacturacionHistorialNotifier extends StateNotifier<FacturacionHistorialSta
 }
 
 final facturacionHistorialProvider =
-    StateNotifierProvider<FacturacionHistorialNotifier, FacturacionHistorialState>((ref) {
-  return FacturacionHistorialNotifier();
-});
+    StateNotifierProvider<
+      FacturacionHistorialNotifier,
+      FacturacionHistorialState
+    >((ref) {
+      return FacturacionHistorialNotifier();
+    });

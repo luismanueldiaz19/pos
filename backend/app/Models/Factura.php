@@ -52,4 +52,9 @@ class Factura extends Model
     {
         return $this->hasOne(EcfDocumento::class, 'factura_id');
     }
+
+    public function pagos()
+    {
+        return $this->hasMany(Pago::class);
+    }
 }

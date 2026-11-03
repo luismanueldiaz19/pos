@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../../palletes/app_colors.dart';
+import '../../../utils/constants.dart';
+import '../../../utils/helpers.dart';
 import '../../../widgets/custom_loading.dart';
 import '../../../widgets/custom_empty_state.dart';
 import '../../../providers/auth_provider.dart';
@@ -10,14 +13,14 @@ import '../providers/gastos_provider.dart';
 import 'registrar_gasto_screen.dart';
 import 'widgets/gastos_kpi_cards.dart';
 import 'widgets/gastos_filtros_bar.dart';
-import 'widgets/gasto_item_card.dart';
+import 'widgets/gastos_table_view.dart';
 
-/// Pantalla para ver, filtrar y gestionar los Gastos Operativos.
+/// Pantalla para ver, filtrar, paginar y exportar a PDF los Gastos Operativos.
 /// Restringida exclusivamente para roles: `admin` y `contador`.
-/// Aplica las skills:
-/// - `flutter-clean-reusable-ui`: Componentes modulares, <250 líneas, componentes centrales.
-/// - `flutter-small-widgets`: Densidad visual alta, alturas 32-38px, fuentes 11-13px.
-/// - `motor-contable`: Visualización de cuentas Clase 6 y asientos contables.
+/// Aplica rigurosamente:
+/// - `flutter-clean-reusable-ui`: Componentes modulares, <250 líneas, SRP.
+/// - `flutter-small-widgets`: Densidad visual alta, KPI compactos (42px), Data Table compacta.
+/// - `motor-contable`: Asientos y cuentas Clase 6 reflejados con precisión.
 class GastosListScreen extends ConsumerStatefulWidget {
   const GastosListScreen({super.key});
 
@@ -27,8 +30,8 @@ class GastosListScreen extends ConsumerStatefulWidget {
 
 class _GastosListScreenState extends ConsumerState<GastosListScreen> {
   final TextEditingController _searchCtrl = TextEditingController();
-  DateTime? _fechaDesde;
-  DateTime? _fechaHasta;
+  DateTimeRange? _rangoFechas;
+  bool _isExportingPdf = false;
 
   @override
   void initState() {
@@ -44,40 +47,75 @@ class _GastosListScreenState extends ConsumerState<GastosListScreen> {
     super.dispose();
   }
 
-  void _seleccionarFecha(bool isDesde) async {
-    final picked = await showDatePicker(
+  Future<void> _seleccionarRangoFechas() async {
+    final now = DateTime.now();
+    final picked = await showDateRangePicker(
       context: context,
-      initialDate: (isDesde ? _fechaDesde : _fechaHasta) ?? DateTime.now(),
       firstDate: DateTime(2020),
       lastDate: DateTime(2035),
+      initialDateRange: _rangoFechas ??
+          DateTimeRange(
+            start: DateTime(now.year, now.month, 1),
+            end: now,
+          ),
+      helpText: 'SELECCIONAR RANGO DE FECHAS',
+      cancelText: 'CANCELAR',
+      confirmText: 'APLICAR',
+      saveText: 'APLICAR',
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: const ColorScheme.light(
+              primary: AppColors.primary,
+              onPrimary: Colors.white,
+              onSurface: AppColors.azulOscuro,
+            ),
+          ),
+          child: child!,
+        );
+      },
     );
+
     if (picked != null) {
-      setState(() {
-        if (isDesde) {
-          _fechaDesde = picked;
-        } else {
-          _fechaHasta = picked;
-        }
-      });
+      setState(() => _rangoFechas = picked);
       _aplicarFiltroFechas();
     }
   }
 
   void _aplicarFiltroFechas() {
     final fmt = DateFormat('yyyy-MM-dd');
-    ref.read(gastosProvider.notifier).setFechas(
-          _fechaDesde != null ? fmt.format(_fechaDesde!) : null,
-          _fechaHasta != null ? fmt.format(_fechaHasta!) : null,
-        );
+    final desde = _rangoFechas != null ? fmt.format(_rangoFechas!.start) : null;
+    final hasta = _rangoFechas != null ? fmt.format(_rangoFechas!.end) : null;
+    ref.read(gastosProvider.notifier).setFechas(desde, hasta);
+  }
+
+  void _limpiarFechas() {
+    setState(() => _rangoFechas = null);
+    _aplicarFiltroFechas();
+  }
+
+  void _seleccionarHoy() {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    setState(() => _rangoFechas = DateTimeRange(start: today, end: today));
+    _aplicarFiltroFechas();
+  }
+
+  void _seleccionarEsteMes() {
+    final now = DateTime.now();
+    final start = DateTime(now.year, now.month, 1);
+    final end = DateTime(now.year, now.month, now.day);
+    setState(() => _rangoFechas = DateTimeRange(start: start, end: end));
+    _aplicarFiltroFechas();
   }
 
   void _limpiarFiltros() {
     setState(() {
       _searchCtrl.clear();
-      _fechaDesde = null;
-      _fechaHasta = null;
+      _rangoFechas = null;
     });
     ref.read(gastosProvider.notifier).loadGastos(
+          page: 1,
           fechaDesde: null,
           fechaHasta: null,
           estado: 'todos',
@@ -87,20 +125,59 @@ class _GastosListScreenState extends ConsumerState<GastosListScreen> {
         );
   }
 
+  String? get _rangoFechasLabel {
+    if (_rangoFechas == null) return null;
+    final fmt = DateFormat('dd/MM/yy');
+    return '${fmt.format(_rangoFechas!.start)} - ${fmt.format(_rangoFechas!.end)}';
+  }
+
+  Future<void> _exportarPdfReporte() async {
+    if (_isExportingPdf) return;
+    setState(() => _isExportingPdf = true);
+    try {
+      final notifier = ref.read(gastosProvider.notifier);
+      final pdfUrlPath = await notifier.obtenerPdfReporteUrl();
+
+      if (pdfUrlPath != null && pdfUrlPath.isNotEmpty) {
+        final urlToLaunch = Uri.parse('$hostName$pdfUrlPath');
+        if (await canLaunchUrl(urlToLaunch)) {
+          await launchUrl(urlToLaunch, mode: LaunchMode.externalApplication);
+        } else if (mounted) {
+          showToast(context, 'No se pudo abrir el PDF', bgColor: Colors.orange);
+        }
+      } else if (mounted) {
+        showToast(
+          context,
+          'No se pudo generar el reporte en PDF',
+          bgColor: Colors.red,
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        showToast(context, 'Error al generar reporte: $e', bgColor: Colors.red);
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isExportingPdf = false);
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final auth = ref.watch(authProvider);
     final bool isAdmin = auth.roles.contains('admin');
     final bool isContador = auth.roles.contains('contador');
 
-    // Validación de seguridad de rol
+    // Validación de seguridad de rol (solo admin o contador)
     if (!isAdmin && !isContador) {
       return Scaffold(
         appBar: AppBar(title: const Text('Acceso Restringido')),
         body: const Center(
           child: CustomEmptyState(
             title: 'Acceso Denegado',
-            subtitle: 'Este módulo está reservado exclusivamente para los roles Administrador y Contador.',
+            subtitle:
+                'Este módulo está reservado exclusivamente para los roles Administrador y Contador.',
             icon: Icons.lock_outline,
           ),
         ),
@@ -108,7 +185,6 @@ class _GastosListScreenState extends ConsumerState<GastosListScreen> {
     }
 
     final state = ref.watch(gastosProvider);
-    final fmtLabel = DateFormat('dd/MM/yy');
 
     return Scaffold(
       backgroundColor: const Color(0xFFF4F6F9),
@@ -151,6 +227,40 @@ class _GastosListScreenState extends ConsumerState<GastosListScreen> {
           ],
         ),
         actions: [
+          // Botón Exportar PDF Reporte Filtrado
+          Padding(
+            padding: const EdgeInsets.only(right: 6),
+            child: OutlinedButton.icon(
+              onPressed: _isExportingPdf ? null : _exportarPdfReporte,
+              icon: _isExportingPdf
+                  ? const SizedBox(
+                      width: 12,
+                      height: 12,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(
+                      Icons.picture_as_pdf_outlined,
+                      size: 15,
+                      color: Color(0xFFDC2626),
+                    ),
+              label: Text(
+                _isExportingPdf ? 'Generando...' : 'PDF Reporte',
+                style: const TextStyle(
+                  fontSize: 11.5,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFFDC2626),
+                ),
+              ),
+              style: OutlinedButton.styleFrom(
+                side: const BorderSide(color: Color(0xFFFCA5A5)),
+                backgroundColor: const Color(0xFFFEF2F2),
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(6),
+                ),
+              ),
+            ),
+          ),
           // Botón Nuevo Gasto
           Padding(
             padding: const EdgeInsets.only(right: 8),
@@ -158,17 +268,24 @@ class _GastosListScreenState extends ConsumerState<GastosListScreen> {
               onPressed: () async {
                 await Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (_) => const RegistrarGastoScreen()),
+                  MaterialPageRoute(
+                    builder: (_) => const RegistrarGastoScreen(),
+                  ),
                 );
                 ref.read(gastosProvider.notifier).loadGastos();
               },
-              icon: const Icon(Icons.add, size: 16),
-              label: const Text('Nuevo Gasto', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+              icon: const Icon(Icons.add, size: 15),
+              label: const Text(
+                'Nuevo Gasto',
+                style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold),
+              ),
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primary,
                 foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(6),
+                ),
               ),
             ),
           ),
@@ -182,31 +299,34 @@ class _GastosListScreenState extends ConsumerState<GastosListScreen> {
         ],
       ),
       body: Padding(
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.all(10),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // KPI Summary Cards
+            // 1. KPI Totals Cards (Ultra compactos de 42px según skill flutter-small-widgets)
             GastosKpiCards(totales: state.totales),
-            const SizedBox(height: 10),
+            const SizedBox(height: 8),
 
-            // Barra de Filtros
+            // 2. Barra de Filtros y Rango de Fechas
             GastosFiltrosBar(
               searchCtrl: _searchCtrl,
-              onSearchChanged: (q) => ref.read(gastosProvider.notifier).setSearch(q),
+              onSearchChanged: (q) =>
+                  ref.read(gastosProvider.notifier).setSearch(q),
               selectedTipoCompra: state.tipoCompra ?? 'todos',
-              onTipoCompraChanged: (tipo) => ref.read(gastosProvider.notifier).setTipoCompra(tipo),
-              onSelectFechaDesde: () => _seleccionarFecha(true),
-              onSelectFechaHasta: () => _seleccionarFecha(false),
-              fechaDesdeLabel: _fechaDesde != null ? fmtLabel.format(_fechaDesde!) : null,
-              fechaHastaLabel: _fechaHasta != null ? fmtLabel.format(_fechaHasta!) : null,
+              onTipoCompraChanged: (tipo) =>
+                  ref.read(gastosProvider.notifier).setTipoCompra(tipo),
+              onSelectRangoFechas: _seleccionarRangoFechas,
+              rangoFechasLabel: _rangoFechasLabel,
+              onLimpiarFechas: _limpiarFechas,
+              onQuickHoy: _seleccionarHoy,
+              onQuickEsteMes: _seleccionarEsteMes,
               onLimpiarFiltros: _limpiarFiltros,
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: 8),
 
-            // Lista de Gastos
+            // 3. Tabla ERP Paginada
             Expanded(
-              child: _buildListaGastos(state),
+              child: _buildCuerpoTabla(state),
             ),
           ],
         ),
@@ -214,9 +334,11 @@ class _GastosListScreenState extends ConsumerState<GastosListScreen> {
     );
   }
 
-  Widget _buildListaGastos(GastosState state) {
+  Widget _buildCuerpoTabla(GastosState state) {
     if (state.isLoading) {
-      return const Center(child: CustomLoading(text: 'Cargando gastos operativos...'));
+      return const Center(
+        child: CustomLoading(text: 'Cargando gastos operativos...'),
+      );
     }
 
     if (state.error != null) {
@@ -232,19 +354,19 @@ class _GastosListScreenState extends ConsumerState<GastosListScreen> {
       return const Center(
         child: CustomEmptyState(
           title: 'No hay gastos registrados',
-          subtitle: 'Utiliza el botón "+ Nuevo Gasto" para registrar tu primer gasto operativo.',
+          subtitle:
+              'No se encontraron gastos con los filtros seleccionados. Utiliza "+ Nuevo Gasto" para registrar uno.',
           icon: Icons.receipt_long_outlined,
         ),
       );
     }
 
-    return ListView.builder(
-      itemCount: state.gastos.length,
-      itemBuilder: (context, index) {
-        final gasto = state.gastos[index];
-        return GastoItemCard(gasto: gasto);
-      },
+    return GastosTableView(
+      state: state,
+      onPageChanged: (page) =>
+          ref.read(gastosProvider.notifier).changePage(page),
+      onPerPageChanged: (perPage) =>
+          ref.read(gastosProvider.notifier).setPerPage(perPage),
     );
   }
 }
-

@@ -12,19 +12,35 @@ class CompraApi {
     String? estado,
     String? search,
     bool? esGasto,
+    String? tipoCompra,
     int? cuentaContableId,
     int page = 1,
     int perPage = 20,
   }) async {
     final api = ApiService();
     String query = '$baseUrl?page=$page&per_page=$perPage';
-    if (fechaDesde != null && fechaDesde.isNotEmpty) query += '&fecha_desde=$fechaDesde';
-    if (fechaHasta != null && fechaHasta.isNotEmpty) query += '&fecha_hasta=$fechaHasta';
-    if (estado != null && estado.isNotEmpty && estado != 'todos') query += '&estado=$estado';
-    if (search != null && search.isNotEmpty) query += '&search=$search';
-    if (esGasto != null) query += '&es_gasto=' + (esGasto ? '1' : '0');
-    if (cuentaContableId != null) query += '&cuenta_contable_id=$cuentaContableId';
-    
+    if (fechaDesde != null && fechaDesde.isNotEmpty) {
+      query += '&fecha_desde=$fechaDesde';
+    }
+    if (fechaHasta != null && fechaHasta.isNotEmpty) {
+      query += '&fecha_hasta=$fechaHasta';
+    }
+    if (estado != null && estado.isNotEmpty && estado != 'todos') {
+      query += '&estado=$estado';
+    }
+    if (search != null && search.isNotEmpty) {
+      query += '&search=$search';
+    }
+    if (esGasto != null) {
+      query += '&es_gasto=${esGasto ? '1' : '0'}';
+    }
+    if (tipoCompra != null && tipoCompra.isNotEmpty && tipoCompra != 'todos') {
+      query += '&tipo_compra=$tipoCompra';
+    }
+    if (cuentaContableId != null) {
+      query += '&cuenta_contable_id=$cuentaContableId';
+    }
+
     final response = await api.get(query, token: token);
 
     if (response.statusCode == 200) {
@@ -53,13 +69,37 @@ class CompraApi {
     String? fechaHasta,
     String? estado,
     String? search,
+    bool? esGasto,
+    String? tipoCompra,
+    int? cuentaContableId,
   }) async {
     final api = ApiService();
     String query = '$baseUrl/reporte/pdf-token?';
-    if (fechaDesde != null && fechaDesde.isNotEmpty) query += '&fecha_desde=$fechaDesde';
-    if (fechaHasta != null && fechaHasta.isNotEmpty) query += '&fecha_hasta=$fechaHasta';
-    if (estado != null && estado.isNotEmpty && estado != 'todos') query += '&estado=$estado';
-    if (search != null && search.isNotEmpty) query += '&search=$search';
+    if (esGasto != null) {
+      query += '&es_gasto=${esGasto ? '1' : '0'}';
+    }
+    if (tipoCompra != null && tipoCompra.isNotEmpty && tipoCompra != 'todos') {
+      query += '&tipo_compra=$tipoCompra';
+    }
+    if (cuentaContableId != null) {
+      query += '&cuenta_contable_id=$cuentaContableId';
+    }
+    query += '&company_name=${Uri.encodeComponent(AppInfo.name)}';
+    query += '&company_rnc=${Uri.encodeComponent(AppInfo.rnc)}';
+    query += '&company_address=${Uri.encodeComponent(AppInfo.address)}';
+    query += '&company_phone=${Uri.encodeComponent(AppInfo.phone)}';
+    if (fechaDesde != null && fechaDesde.isNotEmpty) {
+      query += '&fecha_desde=$fechaDesde';
+    }
+    if (fechaHasta != null && fechaHasta.isNotEmpty) {
+      query += '&fecha_hasta=$fechaHasta';
+    }
+    if (estado != null && estado.isNotEmpty && estado != 'todos') {
+      query += '&estado=$estado';
+    }
+    if (search != null && search.isNotEmpty) {
+      query += '&search=$search';
+    }
 
     final response = await api.get(query, token: token);
 
@@ -72,7 +112,10 @@ class CompraApi {
 
   Future<String?> getCompraPdfUrl(String token, int compraId) async {
     final api = ApiService();
-    final response = await api.get('$baseUrl/$compraId/pdf-token', token: token);
+    final response = await api.get(
+      '$baseUrl/$compraId/pdf-token',
+      token: token,
+    );
 
     if (response.statusCode == 200) {
       final decoded = jsonDecode(response.body);

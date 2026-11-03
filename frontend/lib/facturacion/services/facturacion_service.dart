@@ -221,4 +221,26 @@ class FacturacionService {
       return {"success": false, "message": "Ocurrió un error de conexión."};
     }
   }
+
+  Future<String?> getReportePdfUrl(
+    String token, {
+    Map<String, String>? filters,
+  }) async {
+    try {
+      String query = "";
+      if (filters != null && filters.isNotEmpty) {
+        query =
+            "?${filters.entries.map((e) => "${Uri.encodeComponent(e.key)}=${Uri.encodeComponent(e.value)}").join("&")}";
+      }
+      final response = await _api.get(
+        "$_baseUrl/facturas/reporte/pdf-token$query",
+        token: token,
+      );
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        return data['data']?['pdf_url'] as String?;
+      }
+    } catch (_) {}
+    return null;
+  }
 }

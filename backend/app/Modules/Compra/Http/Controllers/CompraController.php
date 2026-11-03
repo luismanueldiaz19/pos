@@ -27,6 +27,16 @@ class CompraController extends Controller
     {
         $query = $this->compraPdfService->buildFilteredQuery($request->all());
 
+        $resumenQuery = clone $query;
+        $totales = $resumenQuery->reorder()->selectRaw('
+            COUNT(*) as cantidad,
+            COALESCE(SUM(total), 0) as total_general,
+            COALESCE(SUM(impuestos), 0) as total_itbis,
+            COALESCE(SUM(subtotal), 0) as total_subtotal,
+            COALESCE(SUM(CASE WHEN UPPER(tipo_compra) = \'CONTADO\' THEN total ELSE 0 END), 0) as total_contado,
+            COALESCE(SUM(CASE WHEN UPPER(tipo_compra) = \'CREDITO\' THEN total ELSE 0 END), 0) as total_credito
+        ')->first();
+
         $compras = $query->paginate((int)$request->input('per_page', 20));
 
         // Si se solicitan URLs de PDF para cada compra (igual que en Cotizaciones)
@@ -44,7 +54,7 @@ class CompraController extends Controller
         });
 
         return $this->successResponse(
-            data: $compras,
+            data: array_merge($compras->toArray(), ['totales' => $totales]),
             message: 'Lista de compras'
         );
     }

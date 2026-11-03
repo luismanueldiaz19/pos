@@ -7,6 +7,7 @@ import 'package:uuid/uuid.dart';
 import '../../../palletes/app_colors.dart';
 import '../../../utils/helpers.dart';
 import '../../../widgets/custom_button.dart';
+import '../../../widgets/custom_empty_state.dart';
 import '../../../facturacion/providers/metodo_pago_provider.dart';
 import '../../../providers/configuracion_contable_provider.dart';
 import '../../../providers/auth_provider.dart';
@@ -20,11 +21,15 @@ import 'widgets/gasto_importe_card.dart';
 import 'widgets/gasto_condicion_card.dart';
 import 'widgets/gasto_motor_contable_card.dart';
 
-/// Pantalla desacoplada y compacta para el Registro de Gastos Operativos.
-/// Cumple rigurosamente con:
-/// - `flutter-clean-reusable-ui`: Componentes modulares, <250 líneas, uso de widgets centrales (`CustomTextField`, `CustomButton`).
-/// - `flutter-small-widgets`: Densidad visual alta, alturas 34-38px, fuentes 11-13px.
-/// - `motor-contable`: Cero hardcoding, partida doble estricta y previsualización contable en vivo.
+///   ` Pantalla desacoplada y compacta para el Registro de Gastos Operativos.
+///   ` Cumple rigurosamente con:
+///   ` Flutter-clean-reusable-ui`: Componentes modulares, <250 líneas,
+///   ` Uso de widgets centrales (`CustomTextField`, `CustomButton`).
+///   ` Flutter-small-widgets`: Densidad visual alta, alturas 34-38px, fuentes 11-13px.
+///   ` Motor-contable`: Cero hardcoding, partida doble estricta y previsualización contable en vivo.
+///
+///
+
 class RegistrarGastoScreen extends ConsumerStatefulWidget {
   const RegistrarGastoScreen({super.key});
 
@@ -303,6 +308,24 @@ class _RegistrarGastoScreenState extends ConsumerState<RegistrarGastoScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final auth = ref.watch(authProvider);
+    final bool isAdmin = auth.roles.contains('admin');
+    final bool isContador = auth.roles.contains('contador');
+
+    if (!isAdmin && !isContador) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Acceso Restringido')),
+        body: const Center(
+          child: CustomEmptyState(
+            title: 'Acceso Denegado',
+            subtitle:
+                'Este módulo está reservado exclusivamente para los roles Administrador y Contador.',
+            icon: Icons.lock_outline,
+          ),
+        ),
+      );
+    }
+
     final configState = ref.watch(configuracionContableProvider);
     final provState = ref.watch(proveedoresProvider);
     final metodoState = ref.watch(metodoPagoProvider);
@@ -423,7 +446,6 @@ class _RegistrarGastoScreenState extends ConsumerState<RegistrarGastoScreen> {
               ),
             ],
           );
-
           final col2 = Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -473,7 +495,6 @@ class _RegistrarGastoScreenState extends ConsumerState<RegistrarGastoScreen> {
               ),
             ],
           );
-
           if (isWide) {
             return Row(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -495,7 +516,6 @@ class _RegistrarGastoScreenState extends ConsumerState<RegistrarGastoScreen> {
               ],
             );
           }
-
           return SingleChildScrollView(
             padding: const EdgeInsets.all(12),
             child: Column(children: [col1, const SizedBox(height: 12), col2]),

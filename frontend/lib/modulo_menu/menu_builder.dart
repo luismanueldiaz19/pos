@@ -48,6 +48,7 @@ import 'package:sistema_restaurante/modulo_dgii/screens/ncf_secuencias_screen.da
 import 'package:sistema_restaurante/modulo_cotizaciones/screens/crear_cotizacion_screen.dart';
 import 'package:sistema_restaurante/modulo_cotizaciones/screens/historial_cotizaciones_screen.dart';
 import 'package:sistema_restaurante/facturacion/screens/gestion_documentos_screen.dart';
+import '../screens/usuarios/usuarios_screen.dart';
 
 class MenuBuilder {
   /// Retorna la lista de [SidebarItem] basada en la estructura de módulos de negocio y los permisos del usuario.
@@ -331,10 +332,37 @@ class MenuBuilder {
           ],
         ),
 
-      // 7. FINANZAS
+      // 7. GASTOS (Solo Admin o Contador)
+      if (isAdmin || isContador)
+        SidebarItem(
+          title: 'Gastos',
+          icon: Icons.receipt_long_outlined,
+          subItems: [
+            SidebarSubItem(
+              title: 'Agregar Gasto',
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const RegistrarGastoScreen(),
+                ),
+              ),
+            ),
+            SidebarSubItem(
+              title: 'Historial de Gastos',
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const GastosListScreen(),
+                ),
+              ),
+            ),
+          ],
+        ),
+
+      // 8. FINANZAS
       if (auth.hasPermission('gestionar_caja') ||
           auth.hasPermission('ver_cxc') ||
-          auth.hasPermission('ver_gastos') ||
+
           isAdmin ||
           isCajero ||
           isContador)
@@ -402,30 +430,6 @@ class MenuBuilder {
                   );
                 },
               ),
-            if (isAdmin || isContador) ...[
-              SidebarSubItem(
-                title: 'Gestión de Gastos',
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => const GastosListScreen(),
-                    ),
-                  );
-                },
-              ),
-              SidebarSubItem(
-                title: 'Registrar Gasto',
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => const RegistrarGastoScreen(),
-                    ),
-                  );
-                },
-              ),
-            ],
           ],
         ),
 
@@ -597,8 +601,14 @@ class MenuBuilder {
           title: 'Administración',
           icon: Icons.settings_outlined,
           subItems: [
-            SidebarSubItem(title: 'Usuarios', onTap: () {}),
-            SidebarSubItem(title: 'Roles', onTap: () {}),
+            SidebarSubItem(
+              title: 'Usuarios y Roles',
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const UsuariosScreen()),
+              ),
+            ),
+
             SidebarSubItem(
               title: 'Métodos de Pago',
               onTap: () => Navigator.push(
@@ -614,3 +624,4 @@ class MenuBuilder {
     ];
   }
 }
+

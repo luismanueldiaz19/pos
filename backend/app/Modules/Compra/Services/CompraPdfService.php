@@ -98,6 +98,8 @@ class CompraPdfService
             'total_compras'   => (float) $compras->sum('total'),
             'total_subtotal'  => (float) $compras->sum('subtotal'),
             'total_impuestos' => (float) $compras->sum('impuestos'),
+            'total_contado'   => (float) $compras->where('tipo_compra', 'CONTADO')->sum('total'),
+            'total_credito'   => (float) $compras->where('tipo_compra', 'CREDITO')->sum('total'),
             'total_pagado'    => (float) $compras->where('estado', 'PAGADA')->sum('total'),
             'total_pendiente' => (float) $compras->where('estado', 'PENDIENTE')->sum('total'),
         ];
@@ -106,7 +108,10 @@ class CompraPdfService
         $base64Logo = $this->getCompanyLogoBase64();
         $fechaGeneracion = Carbon::now();
 
-        $pdf = Pdf::loadView('pdf.compras_reporte', [
+        $isGasto = !empty($filters['es_gasto']) && filter_var($filters['es_gasto'], FILTER_VALIDATE_BOOLEAN);
+        $view = $isGasto ? 'pdf.gastos_reporte' : 'pdf.compras_reporte';
+
+        $pdf = Pdf::loadView($view, [
             'compras'         => $compras,
             'totales'         => $totales,
             'filters'         => $filters,

@@ -92,6 +92,21 @@ class AppConfig {
 
   /// Crédito en el ticket impreso (al final de la factura)
   static const String ticketCredit = 'Powered by $developerName';
+
+  // ──────────────────────────────────────────────────────────────────────────
+  // 5. DIMENSIONES DE VENTANA DE ESCRITORIO (DESKTOP WINDOW LIMITS)
+  // ──────────────────────────────────────────────────────────────────────────
+  /// Ancho mínimo permitido para la ventana (evita que la interfaz se contraiga demasiado)
+  static const double minWindowWidth = 1024.0;
+
+  /// Alto mínimo permitido para la ventana
+  static const double minWindowHeight = 650.0;
+
+  /// Ancho estándar inicial de la ventana
+  static const double defaultWindowWidth = 1280.0;
+
+  /// Alto estándar inicial de la ventana
+  static const double defaultWindowHeight = 768.0;
 }
 
 /// Alias directo con la estructura requerida

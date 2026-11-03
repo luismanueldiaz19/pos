@@ -64,6 +64,9 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::get('/facturas/reportes', [FacturaController::class, 'reportes'])
         ->middleware('permission:ver_facturas');
 
+    Route::get('/facturas/reporte/pdf-token', [FacturaController::class, 'generarTokenReporte'])
+        ->middleware('permission:ver_facturas');
+
     Route::get('/facturas/{id}', [FacturaController::class, 'show'])
         ->middleware('permission:ver_facturas');
 
@@ -173,6 +176,10 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::apiResource('cuentas-bancarias', BankAccountController::class);
     Route::post('transacciones-bancarias/conciliar', [BankTransactionController::class, 'reconcile']);
     Route::apiResource('transacciones-bancarias', BankTransactionController::class)->only(['index', 'store']);
+
+    // ================= USUARIOS Y ROLES =================
+    Route::get('/usuarios/roles', [\App\Http\Controllers\Api\UsuarioController::class, 'roles']);
+    Route::apiResource('usuarios', \App\Http\Controllers\Api\UsuarioController::class);
 
 });
 

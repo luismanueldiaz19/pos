@@ -15,6 +15,8 @@ class DashboardButtonsSection extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final auth = ref.watch(authProvider);
     final isCajero = auth.roles.any((r) => r.toLowerCase() == 'cajero');
+    final isAdmin = auth.roles.any((r) => r.toLowerCase() == 'admin');
+    final isContador = auth.roles.any((r) => r.toLowerCase() == 'contador');
 
     final items = [
       if (auth.hasPermission('crear_facturas'))
@@ -96,10 +98,10 @@ class DashboardButtonsSection extends ConsumerWidget {
       //     color: Colors.purple.shade700,
       //     onTap: () => onAction('ver_ordenes_compra'),
       //   ),
-      if (!isCajero && auth.hasPermission('ver_cxp'))
+      if (isAdmin || isContador)
         DashboardButton(
           title: 'Reg. Gasto',
-          icon: Icons.request_quote_outlined,
+          icon: Icons.receipt_long_outlined,
           color: Colors.orange.shade700,
           onTap: () => onAction('registrar_gasto'),
         ),

@@ -9,332 +9,354 @@
             margin: 0;
             padding: 0;
         }
+        @page {
+            margin: 0px;
+            size: letter portrait;
+        }
         body {
-            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            font-family: Arial, Helvetica, sans-serif;
             color: #1e293b;
-            font-size: 11px;
+            font-size: 12px;
             background: #ffffff;
-            line-height: 1.4;
+            margin: 0;
+            padding: 35px 38px 80px 38px;
         }
-        .page {
-            padding: 30px 36px;
-        }
-
-        /* ── TOP HEADER ── */
-        .top-band {
-            background: #1a2b4a;
-            color: #ffffff;
-            padding: 18px 24px;
-            border-radius: 8px 8px 0 0;
-        }
-        .top-band-inner {
+        .main-document-flow {
             width: 100%;
         }
-        .top-band-inner td {
-            vertical-align: middle;
-        }
-        .company-name {
-            font-size: 20px;
-            font-weight: 900;
-            letter-spacing: 1px;
-            color: #ffffff;
-        }
-        .company-sub {
-            font-size: 10.5px;
-            color: #cbd5e1;
-            margin-top: 3px;
-            line-height: 1.4;
-        }
-        .invoice-badge {
-            text-align: right;
-        }
-        .invoice-badge .label {
-            font-size: 9.5px;
-            color: #94a3b8;
-            text-transform: uppercase;
-            letter-spacing: 1.5px;
-        }
-        .invoice-badge .number {
-            font-size: 18px;
-            font-weight: 900;
-            color: #ffffff;
-            margin-top: 2px;
-        }
 
-        /* ── META INFO ── */
-        .meta-strip {
-            background: #f8fafc;
-            border: 1px solid #e2e8f0;
-            border-top: none;
-            padding: 10px 24px;
-            margin-bottom: 16px;
-            border-radius: 0 0 8px 8px;
-        }
-        .meta-table {
+        /* ── SECCIÓN INFO PROVEEDOR Y DOCUMENTO ── */
+        .info-table {
             width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
         }
-        .meta-table td {
-            font-size: 10px;
-            color: #64748b;
-        }
-        .meta-table td strong {
-            color: #0f172a;
-        }
-
-        /* ── SUPPLIER & DOC DETAILS ── */
-        .info-cards {
-            width: 100%;
-            border-collapse: separate;
-            border-spacing: 10px 0;
-            margin-bottom: 16px;
-        }
-        .info-card {
-            background: #f8fafc;
-            border: 1px solid #e2e8f0;
-            border-radius: 6px;
-            padding: 12px 14px;
-            vertical-align: top;
+        .info-col-left {
             width: 50%;
+            vertical-align: top;
+            padding-right: 20px;
         }
-        .card-title {
-            font-size: 9.5px;
+        .info-col-right {
+            width: 50%;
+            vertical-align: top;
+            padding-left: 20px;
+        }
+        .info-title {
+            font-size: 18px;
             font-weight: 800;
+            color: #1e2e4a;
+            line-height: 1.2;
+            margin-bottom: 8px;
+            letter-spacing: -0.2px;
+        }
+        .info-doc-number {
+            font-size: 15px;
+            font-weight: 700;
+            color: #334155;
+        }
+        .info-label {
+            font-size: 11px;
             color: #64748b;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            margin-bottom: 6px;
-            border-bottom: 1px solid #e2e8f0;
-            padding-bottom: 4px;
+            margin-bottom: 2px;
         }
-        .card-name {
+        .info-value {
             font-size: 13px;
-            font-weight: 800;
-            color: #0f172a;
-            margin-bottom: 3px;
+            font-weight: 700;
+            color: #1e293b;
+            margin-bottom: 8px;
         }
-        .card-detail {
-            font-size: 10.5px;
+        .info-provider-name {
+            font-size: 14px;
+            font-weight: 700;
+            color: #1e293b;
+            margin-bottom: 4px;
+        }
+        .info-provider-sub {
+            font-size: 12px;
             color: #475569;
             line-height: 1.5;
         }
 
-        /* ── ITEMS TABLE ── */
-        .items-table {
+        /* ── TABLA DE ITEMS DE COMPRA ── */
+        .compra-table {
             width: 100%;
             border-collapse: collapse;
-            margin-top: 6px;
-            font-size: 10.5px;
+            margin-bottom: 24px;
         }
-        .items-table th {
-            background: #334155;
+        .compra-table th {
+            background-color: #1e2e4a;
             color: #ffffff;
-            font-size: 9.5px;
             font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            padding: 8px 10px;
+            font-size: 12px;
+            padding: 10px 14px;
             text-align: left;
+            border: none;
         }
-        .items-table th.r,
-        .items-table td.r {
-            text-align: right;
-        }
-        .items-table th.c,
-        .items-table td.c {
+        .compra-table th.c, .compra-table td.c {
             text-align: center;
         }
-        .items-table td {
-            padding: 8px 10px;
+        .compra-table th.r, .compra-table td.r {
+            text-align: right;
+        }
+        .compra-table td {
+            padding: 10px 14px;
             border-bottom: 1px solid #e2e8f0;
             color: #334155;
+            font-size: 12px;
             vertical-align: middle;
         }
-        .items-table tr:nth-child(even) td {
+        .compra-table tr:nth-child(even) td {
             background-color: #f8fafc;
         }
+        .item-desc {
+            font-weight: 600;
+            color: #1e293b;
+        }
 
-        /* ── TOTALS ── */
-        .totals-container {
+        /* ── TOTALES Y CONDICIONES ── */
+        .summary-table {
             width: 100%;
-            margin-top: 14px;
+            border-collapse: collapse;
+            margin-top: 8px;
+            margin-bottom: 25px;
+        }
+        .summary-col-left {
+            width: 55%;
+            vertical-align: top;
+            padding-right: 25px;
+        }
+        .summary-col-right {
+            width: 45%;
+            vertical-align: top;
+            padding-left: 10px;
+        }
+        .summary-title {
+            font-size: 15px;
+            font-weight: 800;
+            color: #1e2e4a;
+            margin-bottom: 6px;
+        }
+        .summary-box {
+            font-size: 11.5px;
+            color: #475569;
+            line-height: 1.6;
         }
         .totals-table {
-            width: 40%;
-            float: right;
+            width: 100%;
             border-collapse: collapse;
         }
         .totals-table td {
-            padding: 4px 8px;
-            font-size: 11px;
-            color: #475569;
+            padding: 5px 8px;
+            font-size: 12.5px;
         }
         .totals-table td.lbl {
-            text-align: right;
+            color: #475569;
             font-weight: 600;
+            text-align: left;
         }
         .totals-table td.val {
-            text-align: right;
+            color: #1e293b;
             font-weight: 700;
-            color: #0f172a;
+            text-align: right;
         }
-        .totals-table tr.grand td {
-            border-top: 2px solid #cbd5e1;
-            padding-top: 8px;
-            font-size: 13px;
+        .totals-highlight {
+            background-color: #f1f5f9;
+            border-radius: 4px;
+        }
+        .totals-highlight td.lbl {
+            font-size: 16px;
             font-weight: 900;
-            color: #1a2b4a;
+            color: #1e2e4a;
+            padding: 9px 8px;
         }
-
-        /* ── NOTES ── */
-        .notes-box {
-            clear: both;
-            margin-top: 40px;
-            background: #fffbeb;
-            border: 1px solid #fde68a;
-            border-radius: 6px;
-            padding: 10px 14px;
-            font-size: 10.5px;
-            color: #92400e;
+        .totals-highlight td.val {
+            font-size: 17px;
+            font-weight: 900;
+            color: #1e2e4a;
+            padding: 9px 8px;
         }
-        .notes-box strong {
-            color: #78350f;
+        .badge {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
         }
-
-        /* ── FOOTER ── */
-        .footer {
-            margin-top: 30px;
-            padding-top: 10px;
-            border-top: 1px solid #e2e8f0;
-            text-align: center;
-            font-size: 9.5px;
-            color: #94a3b8;
-            clear: both;
+        .badge-success {
+            background-color: #dcfce7;
+            color: #15803d;
+        }
+        .badge-warning {
+            background-color: #fef3c7;
+            color: #b45309;
         }
     </style>
 </head>
 <body>
-    <div class="page">
-        <!-- CABECERA -->
-        <div class="top-band">
-            <table class="top-band-inner">
-                <tr>
-                    <td style="width: 60%;">
-                        @if(!empty($base64Logo))
-                            <img src="{{ $base64Logo }}" style="max-height: 48px; margin-bottom: 6px;" alt="Logo"><br>
-                        @endif
-                        <div class="company-name">{{ $company['nombre'] }}</div>
-                        <div class="company-sub">
-                            RNC: {{ $company['rnc'] }} &nbsp;|&nbsp; Tel: {{ $company['telefono'] }}<br>
-                            {{ $company['direccion'] }}
-                        </div>
-                    </td>
-                    <td style="width: 40%;" class="invoice-badge">
-                        <div class="label">Registro de Compra</div>
-                        <div class="number">Factura #{{ $compra->numero_factura_proveedor }}</div>
-                        <div style="margin-top: 4px; font-size: 10px; color: #cbd5e1;">
-                            NCF: {{ $compra->ncf ?: 'N/A' }}
-                        </div>
-                    </td>
-                </tr>
-            </table>
-        </div>
+    <div class="main-document-flow">
+        <!-- 1. ENCABEZADO GEOMÉTRICO (MODELO SUAVE) -->
+        @include('pdf.components.header_banner', [
+            'titulo'          => 'FACTURA DE COMPRA',
+            'subtitulo'       => !empty($compra->ncf) ? "NCF: {$compra->ncf}" : 'Adquisición de Bienes / Servicios',
+            'numeroDocumento' => $compra->numero_factura_proveedor,
+            'company'         => $company ?? [],
+            'base64Logo'      => $base64Logo ?? null,
+            'emisorNombre'    => 'Registrado por: ' . ($compra->usuario->name ?? 'Administrador'),
+            'emisorTelefono'  => $company['telefono'] ?? config('company.telefono', '(809) 697-8028'),
+            'emisorEmail'     => '---',
+        ])
 
-        <!-- STRIP DE METADATOS -->
-        <div class="meta-strip">
-            <table class="meta-table">
-                <tr>
-                    <td><strong>Fecha de Compra:</strong> {{ \Carbon\Carbon::parse($compra->fecha_compra)->format('d/m/Y') }}</td>
-                    <td><strong>Tipo de Pago:</strong> {{ $compra->tipo_compra }}</td>
-                    <td><strong>Estado:</strong> {{ strtoupper($compra->estado) }}</td>
-                    <td><strong>Registrado por:</strong> {{ $compra->usuario->name ?? 'Admin' }}</td>
-                </tr>
-            </table>
-        </div>
-
-        <!-- DATOS PROVEEDOR Y FACTURACIÓN -->
-        <table class="info-cards">
+        <!-- 2. INFORMACIÓN DEL DOCUMENTO Y PROVEEDOR (EN 2 LÍNEAS) -->
+        <table class="info-table">
             <tr>
-                <td class="info-card">
-                    <div class="card-title">INFORMACIÓN DEL PROVEEDOR</div>
-                    <div class="card-name">{{ $compra->proveedor->nombre ?? 'Desconocido' }}</div>
-                    <div class="card-detail">
-                        <strong>RNC / Cédula:</strong> {{ $compra->proveedor->rnc_cedula ?? 'N/A' }}<br>
-                        <strong>Teléfono:</strong> {{ $compra->proveedor->telefono ?? 'N/A' }}<br>
-                        <strong>Dirección:</strong> {{ $compra->proveedor->direccion ?? 'N/A' }}
+                <!-- COLUMNA IZQUIERDA: DATOS DE LA COMPRA -->
+                <td class="info-col-left">
+                    <div class="info-title">
+                        Factura de Compra<br>
+                        <span class="info-doc-number"># {{ $compra->numero_factura_proveedor }}</span>
                     </div>
+
+                    <div class="info-label">Fecha de compra / emisión:</div>
+                    <div class="info-value">
+                        {{ \Carbon\Carbon::parse($compra->fecha_compra)->translatedFormat('d \\d\\e F \\d\\e Y') }}
+                    </div>
+
+                    @if(!empty($compra->fecha_vencimiento))
+                        <div class="info-label">Válida / Vence:</div>
+                        <div class="info-value">
+                            {{ \Carbon\Carbon::parse($compra->fecha_vencimiento)->translatedFormat('d \\d\\e F \\d\\e Y') }}
+                        </div>
+                    @endif
                 </td>
-                <td class="info-card">
-                    <div class="card-title">CONDICIONES DE PAGO</div>
-                    <div class="card-detail" style="margin-top: 4px;">
-                        <strong>Condición:</strong> {{ $compra->tipo_compra }}<br>
-                        @if($compra->fecha_vencimiento)
-                            <strong>Fecha Vencimiento:</strong> {{ \Carbon\Carbon::parse($compra->fecha_vencimiento)->format('d/m/Y') }}<br>
+
+                <!-- COLUMNA DERECHA: PROVEEDOR -->
+                <td class="info-col-right">
+                    <div class="info-title">Proveedor:</div>
+                    <div class="info-provider-name">{{ $compra->proveedor->nombre ?? 'Proveedor General' }}</div>
+                    <div class="info-provider-sub">
+                        @if(!empty($compra->proveedor->rnc_cedula))
+                            <div>RNC / Cédula: {{ $compra->proveedor->rnc_cedula }}</div>
                         @endif
-                        <strong>Ítems Registrados:</strong> {{ $compra->detalles->count() }} artículo(s)<br>
-                        <strong>Estado Factura:</strong> {{ $compra->estado }}
+                        @if(!empty($compra->proveedor->telefono))
+                            <div>Teléfono: {{ $compra->proveedor->telefono }}</div>
+                        @endif
+                        @if(!empty($compra->proveedor->direccion))
+                            <div>Dirección: {{ $compra->proveedor->direccion }}</div>
+                        @endif
+                        @if(!empty($compra->ncf))
+                            <div>NCF: <strong>{{ $compra->ncf }}</strong></div>
+                        @endif
                     </div>
                 </td>
             </tr>
         </table>
 
-        <!-- ARTÍCULOS COMPRADOS -->
-        <table class="items-table">
+        <!-- 3. CAJA DE DESCRIPCIÓN O NOTA DE COMPRA -->
+        @if(!empty($compra->notas))
+        @include('pdf.components.description_box', [
+            'tituloDescripcion' => 'Concepto / Observaciones:',
+            'descripcion'       => $compra->notas,
+        ])
+        @endif
+
+        <!-- 4. TABLA DE ÍTEMS / ARTÍCULOS COMPRADOS -->
+        <table class="compra-table">
             <thead>
                 <tr>
-                    <th style="width: 5%;" class="c">#</th>
-                    <th style="width: 45%;">PRODUCTO / DESCRIPCIÓN</th>
-                    <th style="width: 10%;" class="c">CANT.</th>
-                    <th style="width: 13%;" class="r">COSTO UNIT.</th>
-                    <th style="width: 12%;" class="r">ITBIS</th>
-                    <th style="width: 15%;" class="r">TOTAL RD$</th>
+                    <th style="width: 44%;">Producto / Descripción</th>
+                    <th style="width: 12%;" class="c">Cantidad</th>
+                    <th style="width: 15%;" class="r">Costo Unit.</th>
+                    <th style="width: 13%;" class="r">ITBIS</th>
+                    <th style="width: 16%;" class="r">Total RD$</th>
                 </tr>
             </thead>
             <tbody>
-                @foreach($compra->detalles as $i => $item)
+                @forelse($compra->detalles as $item)
+                @php
+                    $nombreProd = $item->producto->nombre ?? ($item->descripcion ?? 'Artículo de Compra');
+                    $cant = $item->cantidad ?? 1;
+                    $costo = $item->costo_unitario ?? 0;
+                    $itbis = $item->impuesto_monto ?? 0;
+                    $lineaTot = $item->total ?? ($cant * $costo);
+                @endphp
                 <tr>
-                    <td class="c" style="color: #64748b;">{{ $i + 1 }}</td>
-                    <td>
-                        <strong>{{ $item->producto->nombre ?? $item->descripcion ?? 'Producto' }}</strong>
-                    </td>
-                    <td class="c"><strong>{{ $item->cantidad }}</strong></td>
-                    <td class="r">RD$ {{ number_format($item->costo_unitario, 2) }}</td>
-                    <td class="r">RD$ {{ number_format($item->impuesto_monto, 2) }}</td>
-                    <td class="r"><strong>RD$ {{ number_format($item->total, 2) }}</strong></td>
+                    <td class="item-desc">{{ $nombreProd }}</td>
+                    <td class="c">{{ (float)$cant == (int)$cant ? (int)$cant : number_format($cant, 2) }}</td>
+                    <td class="r">RD$ {{ number_format($costo, 2) }}</td>
+                    <td class="r">RD$ {{ number_format($itbis, 2) }}</td>
+                    <td class="r"><strong>RD$ {{ number_format($lineaTot, 2) }}</strong></td>
                 </tr>
-                @endforeach
+                @empty
+                <tr>
+                    <td colspan="5" style="text-align: center; padding: 25px; color: #94a3b8;">
+                        No hay artículos registrados en esta compra.
+                    </td>
+                </tr>
+                @endforelse
+
+                @php $cantItems = count($compra->detalles ?? []); @endphp
+                @if($cantItems > 0 && $cantItems < 3)
+                    @for($i = $cantItems; $i < 3; $i++)
+                    <tr>
+                        <td style="color: transparent;">&nbsp;</td>
+                        <td class="c" style="color: transparent;">&nbsp;</td>
+                        <td class="r" style="color: transparent;">&nbsp;</td>
+                        <td class="r" style="color: transparent;">&nbsp;</td>
+                        <td class="r" style="color: transparent;">&nbsp;</td>
+                    </tr>
+                    @endfor
+                @endif
             </tbody>
         </table>
 
-        <!-- TOTALES -->
-        <div class="totals-container">
-            <table class="totals-table">
-                <tr>
-                    <td class="lbl">Subtotal:</td>
-                    <td class="val">RD$ {{ number_format($compra->subtotal, 2) }}</td>
-                </tr>
-                <tr>
-                    <td class="lbl">Impuestos (ITBIS):</td>
-                    <td class="val">RD$ {{ number_format($compra->impuestos, 2) }}</td>
-                </tr>
-                <tr class="grand">
-                    <td class="lbl">TOTAL DE COMPRA:</td>
-                    <td class="val">RD$ {{ number_format($compra->total, 2) }}</td>
-                </tr>
-            </table>
-        </div>
+        <!-- 5. CONDICIONES DE PAGO Y TOTALES -->
+        <table class="summary-table">
+            <tr>
+                <!-- COLUMNA IZQUIERDA: CONDICIONES DE PAGO Y REGISTRO -->
+                <td class="summary-col-left">
+                    <div class="summary-title">Condiciones de pago</div>
+                    <div class="summary-box">
+                        <div style="margin-bottom: 4px;">
+                            <strong>Condición de compra:</strong>
+                            <span class="badge {{ strtoupper($compra->tipo_compra) == 'CONTADO' ? 'badge-success' : 'badge-warning' }}">
+                                {{ $compra->tipo_compra }}
+                            </span>
+                        </div>
+                        <div style="margin-bottom: 4px;">
+                            <strong>Estado del pago:</strong>
+                            <span class="badge {{ strtoupper($compra->estado) == 'PAGADA' ? 'badge-success' : 'badge-warning' }}">
+                                {{ strtoupper($compra->estado) }}
+                            </span>
+                        </div>
+                        <div>Comprobante fiscal: {{ $compra->ncf ?: 'Gasto / Comprobante Interno' }}</div>
+                    </div>
+                </td>
 
-        <!-- NOTAS -->
-        @if($compra->notas)
-        <div class="notes-box">
-            <strong>Notas:</strong> {{ $compra->notas }}
-        </div>
-        @endif
+                <!-- COLUMNA DERECHA: TOTALES -->
+                <td class="summary-col-right">
+                    <table class="totals-table">
+                        <tr>
+                            <td class="lbl">Subtotal</td>
+                            <td class="val">RD$ {{ number_format($compra->subtotal, 2) }}</td>
+                        </tr>
+                        <tr>
+                            <td class="lbl">ITBIS (18%)</td>
+                            <td class="val">RD$ {{ number_format($compra->impuestos, 2) }}</td>
+                        </tr>
+                        <tr class="totals-highlight">
+                            <td class="lbl">Total Compra</td>
+                            <td class="val">RD$ {{ number_format($compra->total, 2) }}</td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+        </table>
 
-        <!-- PIE DE PÁGINA -->
-        <div class="footer">
-            Documento generado el {{ \Carbon\Carbon::now()->format('d/m/Y H:i') }} &nbsp;|&nbsp;
-            {{ $company['nombre'] }}
-        </div>
+        <!-- 6. BANNER INFERIOR SUAVE (FOOTER) -->
+        @include('pdf.components.footer_banner', [
+            'company' => $company ?? [],
+        ])
     </div>
 </body>
 </html>
