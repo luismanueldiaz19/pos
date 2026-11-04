@@ -1,7 +1,5 @@
 <?php
 
-declare(strict_types=1);
-
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
@@ -15,10 +13,27 @@ use Spatie\Permission\Models\Role;
 class UsuarioController extends Controller
 {
     /**
+     * Valida que el usuario en sesión sea exclusivamente 'ludeveloper'.
+     * Ningún otro usuario (incluso si tiene rol admin) puede gestionar usuarios y roles.
+     */
+    private function ensureSuperDev(Request $request): void
+    {
+        $user = $request->user();
+        if (!$user || strtolower(trim((string) $user->username)) !== 'ludeveloper') {
+            abort(response()->json([
+                'status'  => false,
+                'message' => "Acceso restringido. Únicamente el usuario 'ludeveloper' tiene autorización para gestionar usuarios y roles.",
+            ], 403));
+        }
+    }
+
+    /**
      * Lista todos los usuarios con sus roles asociados, con soporte de búsqueda y filtros.
      */
     public function index(Request $request): JsonResponse
     {
+        $this->ensureSuperDev($request);
+
         $query = User::with('roles')
             ->orderBy('id', 'desc');
 
@@ -58,15 +73,19 @@ class UsuarioController extends Controller
     }
 
     /**
-     * Retorna todos los roles disponibles en el sistema.
+     * Obtiene el catálogo de roles disponibles con conteo de usuarios.
      */
-    public function roles(): JsonResponse
+    public function roles(Request $request): JsonResponse
     {
+        $this->ensureSuperDev($request);
+
+        // Obtenemos todos los roles de Spatie mapeados limpiamente
         $roles = Role::all()->map(function (Role $role) {
             return [
-                'id'         => $role->id,
-                'name'       => $role->name,
-                'guard_name' => $role->guard_name,
+                'id'           => $role->id,
+                'name'         => $role->name,
+                'guard_name'   => $role->guard_name,
+                'users_count'  => 0,
             ];
         });
 
@@ -81,6 +100,8 @@ class UsuarioController extends Controller
      */
     public function store(Request $request): JsonResponse
     {
+        $this->ensureSuperDev($request);
+
         $validated = $request->validate([
             'name'     => 'required|string|max:255',
             'username' => 'required|string|max:100|unique:users,username',
@@ -124,8 +145,10 @@ class UsuarioController extends Controller
     /**
      * Muestra la información detallada de un usuario.
      */
-    public function show(int $id): JsonResponse
+    public function show(Request $request, int $id): JsonResponse
     {
+        $this->ensureSuperDev($request);
+
         $user = User::with('roles')->find($id);
 
         if (!$user) {
@@ -154,6 +177,8 @@ class UsuarioController extends Controller
      */
     public function update(Request $request, int $id): JsonResponse
     {
+        $this->ensureSuperDev($request);
+
         $user = User::findOrFail($id);
 
         $validated = $request->validate([
@@ -215,10 +240,11 @@ class UsuarioController extends Controller
      */
     public function destroy(Request $request, int $id): JsonResponse
     {
+        $this->ensureSuperDev($request);
+
         return response()->json([
             'status'  => false,
             'message' => 'Los usuarios no se pueden eliminar del sistema por integridad y trazabilidad histórica.',
         ], 422);
     }
 }
-

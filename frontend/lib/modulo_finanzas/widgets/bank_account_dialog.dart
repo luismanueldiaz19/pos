@@ -6,8 +6,8 @@ import '../../providers/auth_provider.dart';
 import '../../providers/bank_provider.dart';
 import '../../providers/configuracion_contable_provider.dart';
 import '../../palletes/app_colors.dart';
+import '../../utils/helpers.dart';
 import '../../widgets/custom_text_field.dart';
-import '../../widgets/custom_button.dart';
 
 class BankAccountDialog extends ConsumerStatefulWidget {
   final BankAccountModel? account;
@@ -23,12 +23,8 @@ class _BankAccountDialogState extends ConsumerState<BankAccountDialog> {
   int? _selectedAccountingAccountId;
   final TextEditingController _nameCtrl = TextEditingController();
   final TextEditingController _accountNumberCtrl = TextEditingController();
-  final TextEditingController _currencyCtrl = TextEditingController(
-    text: 'DOP',
-  );
-  final TextEditingController _initialBalanceCtrl = TextEditingController(
-    text: '0',
-  );
+  final TextEditingController _currencyCtrl = TextEditingController(text: 'DOP');
+  final TextEditingController _initialBalanceCtrl = TextEditingController(text: '0');
 
   bool _isLoading = false;
 
@@ -52,12 +48,19 @@ class _BankAccountDialogState extends ConsumerState<BankAccountDialog> {
     }
   }
 
+  @override
+  void dispose() {
+    _nameCtrl.dispose();
+    _accountNumberCtrl.dispose();
+    _currencyCtrl.dispose();
+    _initialBalanceCtrl.dispose();
+    super.dispose();
+  }
+
   void _guardar() async {
     if (!_formKey.currentState!.validate() || _selectedBankId == null) {
       if (_selectedBankId == null && mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('Seleccione un banco')));
+        showToast(context, 'Por favor, selecciona un banco', bgColor: Colors.orange);
       }
       return;
     }
@@ -69,9 +72,9 @@ class _BankAccountDialogState extends ConsumerState<BankAccountDialog> {
 
     final data = {
       'bank_id': _selectedBankId,
-      'name': _nameCtrl.text,
-      'account_number': _accountNumberCtrl.text,
-      'currency': _currencyCtrl.text,
+      'name': _nameCtrl.text.trim(),
+      'account_number': _accountNumberCtrl.text.trim(),
+      'currency': _currencyCtrl.text.trim().toUpperCase(),
       'current_balance': double.tryParse(_initialBalanceCtrl.text) ?? 0,
       'accounting_account_id': _selectedAccountingAccountId,
       'is_active': true,
@@ -80,17 +83,15 @@ class _BankAccountDialogState extends ConsumerState<BankAccountDialog> {
     try {
       if (widget.account == null) {
         await ref.read(bankProvider.notifier).createAccount(token, data);
+        if (mounted) showToast(context, 'Cuenta creada exitosamente', bgColor: Colors.green);
       } else {
-        await ref
-            .read(bankProvider.notifier)
-            .updateAccount(token, widget.account!.id, data);
+        await ref.read(bankProvider.notifier).updateAccount(token, widget.account!.id, data);
+        if (mounted) showToast(context, 'Cuenta actualizada correctamente', bgColor: Colors.green);
       }
       if (mounted) Navigator.pop(context);
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Error: $e')));
+        showToast(context, 'Error al guardar: $e', bgColor: Colors.red);
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -122,216 +123,266 @@ class _BankAccountDialogState extends ConsumerState<BankAccountDialog> {
       buscarHijos(bancoParent.id);
     }
 
-    // Filtrar cuentas de banco (descendientes de BANCOS que permiten movimiento)
+    // Filtrar cuentas de banco (descendientes de ACTIVOS CORRIENTES que permiten movimiento)
     final cuentasBancos = contableState.catalogoCuentasCompleto
         .where((c) => descendientesIds.contains(c.id) && c.permiteMovimiento)
         .toList();
 
     return Dialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      child: Container(
-        width: 550,
-        padding: const EdgeInsets.all(24),
-        child: Form(
-          key: _formKey,
-          child: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      widget.account == null
-                          ? 'Nueva Cuenta Bancaria'
-                          : 'Editar Cuenta Bancaria',
-                      style: const TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.azulOscuro,
-                      ),
-                    ),
-                    IconButton(
-                      onPressed: () => Navigator.pop(context),
-                      icon: const Icon(Icons.close),
-                    ),
-                  ],
-                ),
-                const Divider(),
-                const SizedBox(height: 16),
-
-                Text(
-                  'Banco',
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.grey.shade700,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                DropdownButtonFormField<int>(
-                  value: _selectedBankId,
-                  decoration: InputDecoration(
-                    filled: true,
-                    fillColor: Colors.grey.shade50,
-                    contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 15,
-                    ),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: Colors.grey.shade200),
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: Colors.grey.shade200),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(
-                        color: AppColors.azulOscuro,
-                        width: 1.5,
-                      ),
-                    ),
-                  ),
-                  items: state.banks
-                      .map(
-                        (b) =>
-                            DropdownMenuItem(value: b.id, child: Text(b.name)),
-                      )
-                      .toList(),
-                  onChanged: (v) => setState(() => _selectedBankId = v),
-                ),
-                const SizedBox(height: 16),
-
-                CustomTextField(
-                  controller: _nameCtrl,
-                  label: 'Nombre de la cuenta',
-                  hintText: 'Ej: Corriente Banreservas',
-                  validator: (v) => v!.isEmpty ? 'Requerido' : null,
-                ),
-                const SizedBox(height: 16),
-
-                CustomTextField(
-                  controller: _accountNumberCtrl,
-                  label: 'Número de Cuenta',
-                  hintText: 'Ej: 987654321',
-                  keyboardType: TextInputType.number,
-                  validator: (v) => v!.isEmpty ? 'Requerido' : null,
-                ),
-                const SizedBox(height: 16),
-
-                Row(
-                  children: [
-                    Expanded(
-                      flex: 1,
-                      child: CustomTextField(
-                        controller: _currencyCtrl,
-                        label: 'Moneda',
-                        hintText: 'DOP, USD',
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      flex: 2,
-                      child: CustomTextField(
-                        controller: _initialBalanceCtrl,
-                        label: widget.account == null
-                            ? 'Balance Inicial'
-                            : 'Balance Actual',
-                        hintText: '0.00',
-                        keyboardType: const TextInputType.numberWithOptions(
-                          decimal: true,
-                        ),
-                        inputFormatters: [
-                          FilteringTextInputFormatter.allow(
-                            RegExp(r'^\d*\.?\d{0,2}'),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 480),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+          child: Form(
+            key: _formKey,
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // ── HEADER ────────────────────────────────────────────────
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(6),
+                            decoration: BoxDecoration(
+                              color: AppColors.primary.withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: const Icon(
+                              Icons.account_balance_outlined,
+                              size: 18,
+                              color: AppColors.primary,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            widget.account == null
+                                ? 'Nueva Cuenta Bancaria'
+                                : 'Editar Cuenta Bancaria',
+                            style: const TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.azulOscuro,
+                            ),
                           ),
                         ],
-                        prefixIcon: Icons.attach_money,
-                        validator: (v) {
-                          if (v != null &&
-                              v.isNotEmpty &&
-                              double.tryParse(v) == null) {
-                            return 'Inválido';
-                          }
-                          return null;
-                        },
                       ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
+                      IconButton(
+                        onPressed: () => Navigator.pop(context),
+                        icon: const Icon(Icons.close, size: 18),
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+                        splashRadius: 16,
+                      ),
+                    ],
+                  ),
+                  const Divider(height: 18),
 
-                Text(
-                  'Cuenta Contable Asociada (Opcional)',
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.grey.shade700,
+                  // ── BANCO ASOCIADO ─────────────────────────────────────────
+                  const Text(
+                    'Banco / Institución',
+                    style: TextStyle(
+                      fontSize: 11.5,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.azulOscuro,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 8),
-                DropdownButtonFormField<int>(
-                  value: _selectedAccountingAccountId,
-                  decoration: InputDecoration(
-                    filled: true,
-                    fillColor: Colors.grey.shade50,
-                    contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 15,
-                    ),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: Colors.grey.shade200),
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: Colors.grey.shade200),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(
-                        color: AppColors.azulOscuro,
-                        width: 1.5,
+                  const SizedBox(height: 4),
+                  DropdownButtonFormField<int>(
+                    initialValue: _selectedBankId,
+                    isDense: true,
+                    decoration: InputDecoration(
+                      filled: true,
+                      fillColor: Colors.white,
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        borderSide: BorderSide(color: Colors.grey.shade300),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        borderSide: BorderSide(color: Colors.grey.shade300),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
                       ),
                     ),
+                    items: state.banks
+                        .map(
+                          (b) => DropdownMenuItem(
+                            value: b.id,
+                            child: Text(
+                              b.name,
+                              style: const TextStyle(fontSize: 12.5),
+                            ),
+                          ),
+                        )
+                        .toList(),
+                    onChanged: (v) => setState(() => _selectedBankId = v),
+                    validator: (v) => v == null ? 'Selecciona una institución' : null,
                   ),
-                  items: cuentasBancos
-                      .map(
+                  const SizedBox(height: 12),
+
+                  // ── NOMBRE DE LA CUENTA ────────────────────────────────────
+                  CustomTextField(
+                    controller: _nameCtrl,
+                    label: 'Nombre de la cuenta',
+                    hintText: 'Ej: Cuenta Corriente Operativa',
+                    validator: (v) => (v == null || v.trim().isEmpty) ? 'Requerido' : null,
+                  ),
+                  const SizedBox(height: 12),
+
+                  // ── NÚMERO DE CUENTA ───────────────────────────────────────
+                  CustomTextField(
+                    controller: _accountNumberCtrl,
+                    label: 'Número de Cuenta',
+                    hintText: 'Ej: 987654321',
+                    keyboardType: TextInputType.text,
+                    validator: (v) => (v == null || v.trim().isEmpty) ? 'Requerido' : null,
+                  ),
+                  const SizedBox(height: 12),
+
+                  // ── MONEDA Y BALANCE ───────────────────────────────────────
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        flex: 1,
+                        child: CustomTextField(
+                          controller: _currencyCtrl,
+                          label: 'Moneda',
+                          hintText: 'DOP',
+                          inputFormatters: [
+                            LengthLimitingTextInputFormatter(5),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        flex: 2,
+                        child: CustomTextField(
+                          controller: _initialBalanceCtrl,
+                          label: widget.account == null
+                              ? 'Balance Inicial'
+                              : 'Balance Actual',
+                          hintText: '0.00',
+                          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                          inputFormatters: [
+                            FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d{0,2}')),
+                          ],
+                          prefixIcon: Icons.attach_money,
+                          validator: (v) {
+                            if (v != null && v.isNotEmpty && double.tryParse(v) == null) {
+                              return 'Inválido';
+                            }
+                            return null;
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+
+                  // ── CUENTA CONTABLE ASOCIADA ───────────────────────────────
+                  const Text(
+                    'Cuenta Contable Asociada (Opcional)',
+                    style: TextStyle(
+                      fontSize: 11.5,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.azulOscuro,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  DropdownButtonFormField<int>(
+                    initialValue: _selectedAccountingAccountId,
+                    isDense: true,
+                    isExpanded: true,
+                    decoration: InputDecoration(
+                      filled: true,
+                      fillColor: Colors.white,
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        borderSide: BorderSide(color: Colors.grey.shade300),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        borderSide: BorderSide(color: Colors.grey.shade300),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
+                      ),
+                    ),
+                    items: [
+                      const DropdownMenuItem<int>(
+                        value: null,
+                        child: Text(
+                          '-- Sin vincular contabilidad --',
+                          style: TextStyle(fontSize: 12, color: Colors.grey),
+                        ),
+                      ),
+                      ...cuentasBancos.map(
                         (c) => DropdownMenuItem(
                           value: c.id,
-                          child: Text('${c.codigo} - ${c.nombre}'),
+                          child: Text(
+                            '${c.codigo} - ${c.nombre}',
+                            style: const TextStyle(fontSize: 12),
+                            overflow: TextOverflow.ellipsis,
+                          ),
                         ),
-                      )
-                      .toList(),
-                  onChanged: (v) =>
-                      setState(() => _selectedAccountingAccountId = v),
-                ),
+                      ),
+                    ],
+                    onChanged: (v) => setState(() => _selectedAccountingAccountId = v),
+                  ),
 
-                const SizedBox(height: 32),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    CustomButton(
-                      title: 'Cancelar',
-                      onPressed: () => Navigator.pop(context),
-                      isFlat: true,
-                      width: 120,
-                      backgroundColor: Colors.grey.shade600,
-                    ),
-                    const SizedBox(width: 16),
-                    CustomButton(
-                      title: widget.account == null ? 'Guardar' : 'Actualizar',
-                      onPressed: _isLoading ? null : _guardar,
-                      isLoading: _isLoading,
-                      width: 150,
-                      backgroundColor: AppColors.primary,
-                    ),
-                  ],
-                ),
-              ],
+                  const SizedBox(height: 20),
+
+                  // ── BOTONES DE ACCIÓN ──────────────────────────────────────
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      OutlinedButton(
+                        onPressed: () => Navigator.pop(context),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: Colors.grey.shade700,
+                          side: BorderSide(color: Colors.grey.shade300),
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                        ),
+                        child: const Text('Cancelar', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                      ),
+                      const SizedBox(width: 10),
+                      ElevatedButton(
+                        onPressed: _isLoading ? null : _guardar,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primary,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                          elevation: 0,
+                        ),
+                        child: _isLoading
+                            ? const SizedBox(
+                                width: 16,
+                                height: 16,
+                                child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                              )
+                            : Text(
+                                widget.account == null ? 'Guardar Cuenta' : 'Actualizar Cuenta',
+                                style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                              ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
           ),
         ),

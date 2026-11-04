@@ -15,6 +15,7 @@ class CajaAndTurnoSeeder extends Seeder
      */
     public function run()
     {
+        /*
         // Crear 5 cajas
         for ($i = 1; $i <= 5; $i++) {
             Caja::updateOrCreate(
@@ -37,6 +38,19 @@ class CajaAndTurnoSeeder extends Seeder
         Turno::updateOrCreate(
             ['id' => 3],
             ['nombre' => 'Noche', 'hora_inicio' => '20:00:00', 'hora_fin' => '04:00:00']
+        );
+        */
+
+        // Crear una sola caja hasta el momento
+        Caja::updateOrCreate(
+            ['id' => 1],
+            ['nombre' => 'Caja 1', 'activa' => true]
+        );
+
+        // Crear un solo turno hasta el momento
+        Turno::updateOrCreate(
+            ['id' => 1],
+            ['nombre' => 'Turno Único', 'hora_inicio' => '06:00:00', 'hora_fin' => '17:00:00']
         );
     }
 }

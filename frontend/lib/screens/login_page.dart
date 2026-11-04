@@ -23,17 +23,13 @@ class _LoginPageState extends ConsumerState<LoginPage>
     with SingleTickerProviderStateMixin {
   bool? obscureText = true;
   final FocusNode _focusNode = FocusNode();
-  late TextEditingController controllerUsuario = TextEditingController(
-    text: 'lwader',
-  );
-  late TextEditingController controllerClave = TextEditingController(
-    text: '199512',
-  );
+  late TextEditingController controllerUsuario = TextEditingController();
+  late TextEditingController controllerClave = TextEditingController();
 
   final List<Map<String, dynamic>> _profiles = [
     {
       'name': 'Admin',
-      'username': 'lwader',
+      'username': 'ludeveloper',
       'pass': '199512',
       'icon': Icons.admin_panel_settings_outlined,
     },
@@ -44,6 +40,7 @@ class _LoginPageState extends ConsumerState<LoginPage>
       'icon': Icons.point_of_sale_outlined,
     },
   ];
+
   int _selectedProfileIndex = 0;
 
   void _selectProfile(int index) {
@@ -153,9 +150,7 @@ class _LoginPageState extends ConsumerState<LoginPage>
       body: Stack(
         children: [
           // 1. Background Image
-          Positioned.fill(
-            child: Image.asset(backgroundFoodFast, fit: BoxFit.cover),
-          ),
+          Positioned.fill(child: Image.asset(background, fit: BoxFit.cover)),
           // 2. Overlay for readability
           Positioned.fill(
             child: Container(color: Colors.black.withValues(alpha: 0.35)),
@@ -308,134 +303,134 @@ class _LoginPageState extends ConsumerState<LoginPage>
 
                                     const SizedBox(height: 14),
 
-                                    /// 👤 SELECTOR DE PERFIL (CHIPS RÁPIDOS COMPACTOS)
-                                    Text(
-                                      'ACCESO RÁPIDO',
-                                      style: TextStyle(
-                                        fontSize: 9.5,
-                                        fontWeight: FontWeight.w700,
-                                        color: Colors.grey.shade500,
-                                        letterSpacing: 0.8,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 6),
-                                    Wrap(
-                                      spacing: 6,
-                                      runSpacing: 6,
-                                      children: List.generate(_profiles.length, (
-                                        index,
-                                      ) {
-                                        final isSelected =
-                                            _selectedProfileIndex == index;
-                                        final profile = _profiles[index];
-                                        return InkWell(
-                                          onTap: () => _selectProfile(index),
-                                          borderRadius: BorderRadius.circular(
-                                            8,
-                                          ),
-                                          child: AnimatedContainer(
-                                            duration: const Duration(
-                                              milliseconds: 200,
-                                            ),
-                                            padding: const EdgeInsets.symmetric(
-                                              horizontal: 8,
-                                              vertical: 4,
-                                            ),
-                                            decoration: BoxDecoration(
-                                              color: isSelected
-                                                  ? AppColors.azulOscuro
-                                                  : Colors.grey.shade50,
-                                              borderRadius:
-                                                  BorderRadius.circular(8),
-                                              border: Border.all(
-                                                color: isSelected
-                                                    ? AppColors.azulOscuro
-                                                    : Colors.grey.shade300,
-                                                width: 1,
-                                              ),
-                                              boxShadow: isSelected
-                                                  ? [
-                                                      BoxShadow(
-                                                        color: AppColors
-                                                            .azulOscuro
-                                                            .withValues(
-                                                              alpha: 0.25,
-                                                            ),
-                                                        blurRadius: 4,
-                                                        offset: const Offset(
-                                                          0,
-                                                          1.5,
-                                                        ),
-                                                      ),
-                                                    ]
-                                                  : [],
-                                            ),
-                                            child: Row(
-                                              mainAxisSize: MainAxisSize.min,
-                                              children: [
-                                                Icon(
-                                                  profile['icon'] as IconData,
-                                                  size: 13,
-                                                  color: isSelected
-                                                      ? Colors.white
-                                                      : Colors.grey.shade700,
-                                                ),
-                                                const SizedBox(width: 5),
-                                                Text(
-                                                  profile['name'] as String,
-                                                  style: TextStyle(
-                                                    color: isSelected
-                                                        ? Colors.white
-                                                        : Colors.grey.shade800,
-                                                    fontWeight: isSelected
-                                                        ? FontWeight.w700
-                                                        : FontWeight.w500,
-                                                    fontSize: 11,
-                                                  ),
-                                                ),
-                                                const SizedBox(width: 4),
-                                                Container(
-                                                  padding:
-                                                      const EdgeInsets.symmetric(
-                                                        horizontal: 4,
-                                                        vertical: 1,
-                                                      ),
-                                                  decoration: BoxDecoration(
-                                                    color: isSelected
-                                                        ? Colors.white
-                                                              .withValues(
-                                                                alpha: 0.2,
-                                                              )
-                                                        : Colors.grey.shade200,
-                                                    borderRadius:
-                                                        BorderRadius.circular(
-                                                          4,
-                                                        ),
-                                                  ),
-                                                  child: Text(
-                                                    '@${profile['username']}',
-                                                    style: TextStyle(
-                                                      color: isSelected
-                                                          ? Colors.white
-                                                                .withValues(
-                                                                  alpha: 0.95,
-                                                                )
-                                                          : Colors
-                                                                .grey
-                                                                .shade600,
-                                                      fontSize: 9.5,
-                                                      fontWeight:
-                                                          FontWeight.w500,
-                                                    ),
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                          ),
-                                        );
-                                      }),
-                                    ),
+                                    // /// 👤 SELECTOR DE PERFIL (CHIPS RÁPIDOS COMPACTOS)
+                                    // Text(
+                                    //   'ACCESO RÁPIDO',
+                                    //   style: TextStyle(
+                                    //     fontSize: 9.5,
+                                    //     fontWeight: FontWeight.w700,
+                                    //     color: Colors.grey.shade500,
+                                    //     letterSpacing: 0.8,
+                                    //   ),
+                                    // ),
 
+                                    // const SizedBox(height: 6),
+                                    // Wrap(
+                                    //   spacing: 6,
+                                    //   runSpacing: 6,
+                                    //   children: List.generate(_profiles.length, (
+                                    //     index,
+                                    //   ) {
+                                    //     final isSelected =
+                                    //         _selectedProfileIndex == index;
+                                    //     final profile = _profiles[index];
+                                    //     return InkWell(
+                                    //       onTap: () => _selectProfile(index),
+                                    //       borderRadius: BorderRadius.circular(
+                                    //         8,
+                                    //       ),
+                                    //       child: AnimatedContainer(
+                                    //         duration: const Duration(
+                                    //           milliseconds: 200,
+                                    //         ),
+                                    //         padding: const EdgeInsets.symmetric(
+                                    //           horizontal: 8,
+                                    //           vertical: 4,
+                                    //         ),
+                                    //         decoration: BoxDecoration(
+                                    //           color: isSelected
+                                    //               ? AppColors.azulOscuro
+                                    //               : Colors.grey.shade50,
+                                    //           borderRadius:
+                                    //               BorderRadius.circular(8),
+                                    //           border: Border.all(
+                                    //             color: isSelected
+                                    //                 ? AppColors.azulOscuro
+                                    //                 : Colors.grey.shade300,
+                                    //             width: 1,
+                                    //           ),
+                                    //           boxShadow: isSelected
+                                    //               ? [
+                                    //                   BoxShadow(
+                                    //                     color: AppColors
+                                    //                         .azulOscuro
+                                    //                         .withValues(
+                                    //                           alpha: 0.25,
+                                    //                         ),
+                                    //                     blurRadius: 4,
+                                    //                     offset: const Offset(
+                                    //                       0,
+                                    //                       1.5,
+                                    //                     ),
+                                    //                   ),
+                                    //                 ]
+                                    //               : [],
+                                    //         ),
+                                    //         child: Row(
+                                    //           mainAxisSize: MainAxisSize.min,
+                                    //           children: [
+                                    //             Icon(
+                                    //               profile['icon'] as IconData,
+                                    //               size: 13,
+                                    //               color: isSelected
+                                    //                   ? Colors.white
+                                    //                   : Colors.grey.shade700,
+                                    //             ),
+                                    //             const SizedBox(width: 5),
+                                    //             Text(
+                                    //               profile['name'] as String,
+                                    //               style: TextStyle(
+                                    //                 color: isSelected
+                                    //                     ? Colors.white
+                                    //                     : Colors.grey.shade800,
+                                    //                 fontWeight: isSelected
+                                    //                     ? FontWeight.w700
+                                    //                     : FontWeight.w500,
+                                    //                 fontSize: 11,
+                                    //               ),
+                                    //             ),
+                                    //             const SizedBox(width: 4),
+                                    //             Container(
+                                    //               padding:
+                                    //                   const EdgeInsets.symmetric(
+                                    //                     horizontal: 4,
+                                    //                     vertical: 1,
+                                    //                   ),
+                                    //               decoration: BoxDecoration(
+                                    //                 color: isSelected
+                                    //                     ? Colors.white
+                                    //                           .withValues(
+                                    //                             alpha: 0.2,
+                                    //                           )
+                                    //                     : Colors.grey.shade200,
+                                    //                 borderRadius:
+                                    //                     BorderRadius.circular(
+                                    //                       4,
+                                    //                     ),
+                                    //               ),
+                                    //               child: Text(
+                                    //                 '@${profile['username']}',
+                                    //                 style: TextStyle(
+                                    //                   color: isSelected
+                                    //                       ? Colors.white
+                                    //                             .withValues(
+                                    //                               alpha: 0.95,
+                                    //                             )
+                                    //                       : Colors
+                                    //                             .grey
+                                    //                             .shade600,
+                                    //                   fontSize: 9.5,
+                                    //                   fontWeight:
+                                    //                       FontWeight.w500,
+                                    //                 ),
+                                    //               ),
+                                    //             ),
+                                    //           ],
+                                    //         ),
+                                    //       ),
+                                    //     );
+                                    //   }),
+                                    // ),
                                     const SizedBox(height: 10),
 
                                     // USER FIELD

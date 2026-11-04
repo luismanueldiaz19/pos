@@ -23,13 +23,12 @@ const String apiUrl = '$hostName${AppConfig.apiVersion}';
 
 const String logoSinFondo = AppConfig.logoSinFondo;
 const String logoFactura = AppConfig.logoFactura;
+
+const String background = AppConfig.backgroundLibreria;
+
 const double kwidth = 250;
 
 String firmaLu = 'assets/logo_lwader.png';
-
-String backgroundCafeteria = 'assets/background_cafeteria.png';
-String backgroundLibreria = 'assets/background_libreria.png';
-String backgroundFoodFast = 'assets/background.png';
 
 String developerFirma = AppConfig.developerName;
 

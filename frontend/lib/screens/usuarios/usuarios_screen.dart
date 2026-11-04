@@ -140,6 +140,58 @@ class _UsuariosScreenState extends ConsumerState<UsuariosScreen> {
     final state = ref.watch(usuarioProvider);
     final auth = ref.watch(authProvider);
 
+    final isSuperDev = auth.user?.username?.toLowerCase().trim() == 'ludeveloper';
+    if (!isSuperDev) {
+      return Scaffold(
+        backgroundColor: const Color(0xFFF8F9FA),
+        appBar: AppBar(
+          title: const Text(
+            'ACCESO RESTRINGIDO',
+            style: TextStyle(
+              color: AppColors.azulOscuro,
+              fontWeight: FontWeight.bold,
+              fontSize: 16,
+            ),
+          ),
+          elevation: 0,
+          backgroundColor: Colors.white,
+          iconTheme: const IconThemeData(color: AppColors.azulOscuro),
+        ),
+        body: Center(
+          child: Container(
+            padding: const EdgeInsets.all(32),
+            margin: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.grey.shade200),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.lock_person_outlined, size: 56, color: Colors.red.shade400),
+                const SizedBox(height: 16),
+                const Text(
+                  'Acceso Exclusivo para ludeveloper',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.azulOscuro,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Únicamente el desarrollador principal (ludeveloper) tiene permisos para gestionar usuarios y roles.',
+                  style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
     // Contadores rápidos para la franja de resumen
     final totalUsuarios = state.usuarios.length;
     final totalAdmins = state.usuarios

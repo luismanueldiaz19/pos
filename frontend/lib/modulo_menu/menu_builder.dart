@@ -23,11 +23,11 @@ import 'package:sistema_restaurante/modulo_compras/screens/proveedores_screen.da
 import 'package:sistema_restaurante/modulo_producto/screens/screen_productos.dart';
 import 'package:sistema_restaurante/modulo_producto/screens/screen_catalogo_base.dart';
 import 'package:sistema_restaurante/modulo_producto/screens/screen_movimientos_inventario.dart';
-import 'package:sistema_restaurante/modulo_producto/screens/screen_recetas.dart';
+// import 'package:sistema_restaurante/modulo_producto/screens/screen_recetas.dart';
 import 'package:sistema_restaurante/modulo_compras/screens/nueva_compra_screen.dart';
 import 'package:sistema_restaurante/modulo_compras/screens/compras_list_screen.dart';
-import 'package:sistema_restaurante/modulo_ordenes_compra/screens/crear_orden_compra_screen.dart';
-import 'package:sistema_restaurante/modulo_ordenes_compra/screens/historial_ordenes_compra_screen.dart';
+// import 'package:sistema_restaurante/modulo_ordenes_compra/screens/crear_orden_compra_screen.dart';
+// import 'package:sistema_restaurante/modulo_ordenes_compra/screens/historial_ordenes_compra_screen.dart';
 
 // Módulo 4: Finanzas & Contabilidad (Back-Office)
 import 'package:sistema_restaurante/modulo_finanzas/screens/bancos_dashboard_screen.dart';
@@ -151,7 +151,9 @@ class MenuBuilder {
           icon: Icons.history_outlined,
           onTap: () => Navigator.push(
             context,
-            MaterialPageRoute(builder: (_) => const HistorialCotizacionesScreen()),
+            MaterialPageRoute(
+              builder: (_) => const HistorialCotizacionesScreen(),
+            ),
           ),
         ),
 
@@ -251,30 +253,34 @@ class MenuBuilder {
           ),
         ),
       if (!isCajero && (auth.hasPermission('ver_inventario') || isAdmin)) ...[
+        // SidebarSubItem(
+        //   title: 'Kardex & Movimientos',
+        //   icon: Icons.swap_vert_rounded,
+        //   onTap: () => Navigator.push(
+        //     context,
+        //     MaterialPageRoute(
+        //       builder: (_) => const ScreenMovimientosInventario(),
+        //     ),
+        //   ),
+        // ),
         SidebarSubItem(
-          title: 'Kardex & Movimientos',
-          icon: Icons.swap_vert_rounded,
-          onTap: () => Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => const ScreenMovimientosInventario()),
-          ),
-        ),
-        SidebarSubItem(
-          title: 'Ajustes de Inventario',
+          title: 'Inventario',
           icon: Icons.tune_outlined,
           onTap: () => Navigator.push(
             context,
-            MaterialPageRoute(builder: (_) => const ScreenMovimientosInventario()),
+            MaterialPageRoute(
+              builder: (_) => const ScreenMovimientosInventario(),
+            ),
           ),
         ),
-        SidebarSubItem(
-          title: 'Recetas & Producción',
-          icon: Icons.menu_book_outlined,
-          onTap: () => Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => const ScreenRecetas()),
-          ),
-        ),
+        // SidebarSubItem(
+        //   title: 'Recetas & Producción',
+        //   icon: Icons.menu_book_outlined,
+        //   onTap: () => Navigator.push(
+        //     context,
+        //     MaterialPageRoute(builder: (_) => const ScreenRecetas()),
+        //   ),
+        // ),
       ],
 
       SidebarSubItem.header('Clasificación'),
@@ -338,24 +344,24 @@ class MenuBuilder {
             MaterialPageRoute(builder: (_) => const ComprasListScreen()),
           ),
         ),
-        SidebarSubItem(
-          title: 'Nueva Orden de Compra',
-          icon: Icons.post_add_outlined,
-          onTap: () => Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => const CrearOrdenCompraScreen()),
-          ),
-        ),
-        SidebarSubItem(
-          title: 'Órdenes de Compra',
-          icon: Icons.assignment_outlined,
-          onTap: () => Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (_) => const HistorialOrdenesCompraScreen(),
-            ),
-          ),
-        ),
+        // SidebarSubItem(
+        //   title: 'Nueva Orden de Compra',
+        //   icon: Icons.post_add_outlined,
+        //   onTap: () => Navigator.push(
+        //     context,
+        //     MaterialPageRoute(builder: (_) => const CrearOrdenCompraScreen()),
+        //   ),
+        // ),
+        // SidebarSubItem(
+        //   title: 'Órdenes de Compra',
+        //   icon: Icons.assignment_outlined,
+        //   onTap: () => Navigator.push(
+        //     context,
+        //     MaterialPageRoute(
+        //       builder: (_) => const HistorialOrdenesCompraScreen(),
+        //     ),
+        //   ),
+        // ),
       ],
     ];
 
@@ -598,7 +604,8 @@ class MenuBuilder {
       ],
 
       SidebarSubItem.header('Configuración & Sistema'),
-      if (!isCajero && (auth.hasPermission('gestionar_usuarios') || isAdmin)) ...[
+      // Únicamente el usuario 'ludeveloper' puede acceder a Usuarios y Roles
+      if (auth.user?.username?.toLowerCase().trim() == 'ludeveloper')
         SidebarSubItem(
           title: 'Usuarios y Roles',
           icon: Icons.manage_accounts_outlined,
@@ -607,6 +614,8 @@ class MenuBuilder {
             MaterialPageRoute(builder: (_) => const UsuariosScreen()),
           ),
         ),
+      if (!isCajero &&
+          (auth.hasPermission('gestionar_usuarios') || isAdmin)) ...[
         SidebarSubItem(
           title: 'Métodos de Pago',
           icon: Icons.payment_outlined,
