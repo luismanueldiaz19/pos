@@ -64,11 +64,7 @@ class Auth extends _$Auth {
     if (state.user != null) {
       await prefs.setString(
         'user',
-        jsonEncode({
-          'id': state.user!.id,
-          'name': state.user!.name,
-          'email': state.user!.email,
-        }),
+        jsonEncode(state.user!.toJson()),
       );
     }
     await prefs.setStringList('roles', state.roles);

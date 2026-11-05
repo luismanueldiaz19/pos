@@ -42,8 +42,6 @@ class _UsuariosScreenState extends ConsumerState<UsuariosScreen> {
         return Colors.purple.shade700;
       case 'cajero':
         return Colors.green.shade700;
-      case 'vendedor':
-        return Colors.orange.shade800;
       case 'contador':
         return Colors.indigo.shade700;
       case 'auxiliar contable':
@@ -140,7 +138,22 @@ class _UsuariosScreenState extends ConsumerState<UsuariosScreen> {
     final state = ref.watch(usuarioProvider);
     final auth = ref.watch(authProvider);
 
-    final isSuperDev = auth.user?.username?.toLowerCase().trim() == 'ludeveloper';
+    // Auto-cargar si no se han cargado y hay token disponible
+    if (state.usuarios.isEmpty &&
+        !state.isLoading &&
+        state.error == null &&
+        auth.token != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && auth.token != null) {
+          ref.read(usuarioProvider.notifier).cargarDatos(auth.token!);
+        }
+      });
+    }
+
+    final isSuperDev =
+        auth.user?.username?.toLowerCase().trim() == 'ludeveloper' ||
+        auth.isAdmin ||
+        auth.hasPermission('gestionar_usuarios');
     if (!isSuperDev) {
       return Scaffold(
         backgroundColor: const Color(0xFFF8F9FA),
@@ -169,10 +182,14 @@ class _UsuariosScreenState extends ConsumerState<UsuariosScreen> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.lock_person_outlined, size: 56, color: Colors.red.shade400),
+                Icon(
+                  Icons.lock_person_outlined,
+                  size: 56,
+                  color: Colors.red.shade400,
+                ),
                 const SizedBox(height: 16),
                 const Text(
-                  'Acceso Exclusivo para ludeveloper',
+                  'Acceso Exclusivo para Administradores',
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
@@ -181,7 +198,7 @@ class _UsuariosScreenState extends ConsumerState<UsuariosScreen> {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'Únicamente el desarrollador principal (ludeveloper) tiene permisos para gestionar usuarios y roles.',
+                  'Únicamente administradores autorizados tienen permisos para gestionar usuarios y roles.',
                   style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
                   textAlign: TextAlign.center,
                 ),
@@ -200,8 +217,14 @@ class _UsuariosScreenState extends ConsumerState<UsuariosScreen> {
     final totalCajeros = state.usuarios
         .where((u) => u.roles.any((r) => r.toLowerCase() == 'cajero'))
         .length;
-    final totalVendedores = state.usuarios
-        .where((u) => u.roles.any((r) => r.toLowerCase() == 'vendedor'))
+    final totalContabilidad = state.usuarios
+        .where(
+          (u) => u.roles.any(
+            (r) =>
+                r.toLowerCase() == 'contador' ||
+                r.toLowerCase() == 'auxiliar contable',
+          ),
+        )
         .length;
 
     return Scaffold(
@@ -312,10 +335,11 @@ class _UsuariosScreenState extends ConsumerState<UsuariosScreen> {
                           },
                         ),
                         ...(state.rolesDisponibles.isNotEmpty
-                                ? state.rolesDisponibles
+                                ? state.rolesDisponibles.where(
+                                    (r) => r.toLowerCase() != 'vendedor',
+                                  )
                                 : const [
                                     'admin',
-                                    'vendedor',
                                     'cajero',
                                     'contador',
                                     'auxiliar contable',
@@ -375,10 +399,10 @@ class _UsuariosScreenState extends ConsumerState<UsuariosScreen> {
                 ),
                 const SizedBox(width: 10),
                 _buildKpiCard(
-                  label: 'VENDEDORES',
-                  value: '$totalVendedores',
-                  icon: Icons.storefront_outlined,
-                  color: Colors.orange.shade800,
+                  label: 'CONTABILIDAD',
+                  value: '$totalContabilidad',
+                  icon: Icons.calculate_outlined,
+                  color: Colors.indigo.shade700,
                 ),
               ],
             ),

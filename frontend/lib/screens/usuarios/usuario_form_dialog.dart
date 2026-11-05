@@ -44,8 +44,8 @@ class _UsuarioFormDialogState extends State<UsuarioFormDialog> {
     _passwordCtrl = TextEditingController();
 
     _selectedRoles = (u?.roles.isNotEmpty ?? false)
-        ? u!.roles.toSet()
-        : {'vendedor'};
+        ? u!.roles.where((r) => r.toLowerCase() != 'vendedor').toSet()
+        : {'cajero'};
   }
 
   @override
@@ -63,8 +63,6 @@ class _UsuarioFormDialogState extends State<UsuarioFormDialog> {
         return Colors.purple.shade700;
       case 'cajero':
         return Colors.green.shade700;
-      case 'vendedor':
-        return Colors.orange.shade800;
       case 'contador':
         return Colors.indigo.shade700;
       case 'auxiliar contable':
@@ -80,8 +78,6 @@ class _UsuarioFormDialogState extends State<UsuarioFormDialog> {
         return Icons.admin_panel_settings_outlined;
       case 'cajero':
         return Icons.point_of_sale_outlined;
-      case 'vendedor':
-        return Icons.storefront_outlined;
       case 'contador':
         return Icons.account_balance_outlined;
       case 'auxiliar contable':
@@ -124,7 +120,9 @@ class _UsuarioFormDialogState extends State<UsuarioFormDialog> {
   Widget build(BuildContext context) {
     final rolesList = widget.rolesDisponibles.isNotEmpty
         ? widget.rolesDisponibles
-        : ['admin', 'vendedor', 'cajero', 'contador', 'auxiliar contable'];
+            .where((r) => r.toLowerCase() != 'vendedor')
+            .toList()
+        : ['admin', 'cajero', 'contador', 'auxiliar contable'];
 
     return Dialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),

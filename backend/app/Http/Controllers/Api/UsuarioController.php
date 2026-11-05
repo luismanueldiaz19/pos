@@ -13,16 +13,15 @@ use Spatie\Permission\Models\Role;
 class UsuarioController extends Controller
 {
     /**
-     * Valida que el usuario en sesión sea exclusivamente 'ludeveloper'.
-     * Ningún otro usuario (incluso si tiene rol admin) puede gestionar usuarios y roles.
+     * Valida que el usuario en sesión sea 'ludeveloper' o tenga rol 'admin'.
      */
     private function ensureSuperDev(Request $request): void
     {
         $user = $request->user();
-        if (!$user || strtolower(trim((string) $user->username)) !== 'ludeveloper') {
+        if (!$user || (!$user->hasRole('admin') && strtolower(trim((string) $user->username)) !== 'ludeveloper')) {
             abort(response()->json([
                 'status'  => false,
-                'message' => "Acceso restringido. Únicamente el usuario 'ludeveloper' tiene autorización para gestionar usuarios y roles.",
+                'message' => "Acceso restringido. Únicamente administradores tienen autorización para gestionar usuarios y roles.",
             ], 403));
         }
     }
@@ -79,8 +78,8 @@ class UsuarioController extends Controller
     {
         $this->ensureSuperDev($request);
 
-        // Obtenemos todos los roles de Spatie mapeados limpiamente
-        $roles = Role::all()->map(function (Role $role) {
+        // Obtenemos todos los roles de Spatie mapeados limpiamente (excluyendo vendedor)
+        $roles = Role::where('name', '!=', 'vendedor')->get()->map(function (Role $role) {
             return [
                 'id'           => $role->id,
                 'name'         => $role->name,

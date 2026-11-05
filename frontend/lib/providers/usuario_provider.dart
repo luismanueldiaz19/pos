@@ -15,7 +15,6 @@ class UsuarioState {
     this.usuarios = const [],
     this.rolesDisponibles = const [
       'admin',
-      'vendedor',
       'cajero',
       'contador',
       'auxiliar contable',
@@ -57,10 +56,8 @@ class UsuarioNotifier extends StateNotifier<UsuarioState> {
 
   Future<void> cargarDatos(String token) async {
     state = state.copyWith(isLoading: true, clearError: true);
-    await Future.wait([
-      cargarRoles(token, silent: true),
-      cargarUsuarios(token, silent: true),
-    ]);
+    await cargarRoles(token, silent: true);
+    await cargarUsuarios(token, silent: true);
     state = state.copyWith(isLoading: false);
   }
 

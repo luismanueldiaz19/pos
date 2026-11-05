@@ -32,9 +32,9 @@ String firmaLu = 'assets/logo_lwader.png';
 
 String developerFirma = AppConfig.developerName;
 
-String textConfirmacion = '👉🏼Esta seguro realizar el pedido ? 👈🏼';
-String textConfAction = '👉🏼Esta seguro realizar la acción ? 👈🏼';
-String eliminarMjs = '🥺Esta seguro de eliminar🥺';
+String textConfirmacion = '👉🏼 Esta seguro realizar el pedido ? 👈🏼';
+String textConfAction = '👉🏼 Esta seguro realizar la acción ? 👈🏼';
+String eliminarMjs = '🥺 Esta seguro de eliminar 🥺';
 String confirmarMjs =
     '👉🏼Esta seguro de confirmar el despacho de las facturas?👈🏼';
 
