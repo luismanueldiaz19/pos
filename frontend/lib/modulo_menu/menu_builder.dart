@@ -22,7 +22,9 @@ import 'package:sistema_restaurante/modulo_compras/screens/proveedores_screen.da
 // Módulo 3: Inventario & Almacén
 import 'package:sistema_restaurante/modulo_producto/screens/screen_productos.dart';
 import 'package:sistema_restaurante/modulo_producto/screens/screen_catalogo_base.dart';
-import 'package:sistema_restaurante/modulo_producto/screens/screen_movimientos_inventario.dart';
+import 'package:sistema_restaurante/modulo_producto/screens/screen_existencias_inventario.dart';
+import 'package:sistema_restaurante/modulo_producto/screens/screen_kardex_inventario.dart';
+import 'package:sistema_restaurante/modulo_producto/screens/screen_alertas_inventario.dart';
 // import 'package:sistema_restaurante/modulo_producto/screens/screen_recetas.dart';
 import 'package:sistema_restaurante/modulo_compras/screens/nueva_compra_screen.dart';
 import 'package:sistema_restaurante/modulo_compras/screens/compras_list_screen.dart';
@@ -253,34 +255,36 @@ class MenuBuilder {
           ),
         ),
       if (!isCajero && (auth.hasPermission('ver_inventario') || isAdmin)) ...[
-        // SidebarSubItem(
-        //   title: 'Kardex & Movimientos',
-        //   icon: Icons.swap_vert_rounded,
-        //   onTap: () => Navigator.push(
-        //     context,
-        //     MaterialPageRoute(
-        //       builder: (_) => const ScreenMovimientosInventario(),
-        //     ),
-        //   ),
-        // ),
         SidebarSubItem(
-          title: 'Inventario',
-          icon: Icons.tune_outlined,
+          title: 'Existencias y Valorización',
+          icon: Icons.inventory_2_outlined,
           onTap: () => Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (_) => const ScreenMovimientosInventario(),
+              builder: (_) => const ScreenExistenciasInventario(),
             ),
           ),
         ),
-        // SidebarSubItem(
-        //   title: 'Recetas & Producción',
-        //   icon: Icons.menu_book_outlined,
-        //   onTap: () => Navigator.push(
-        //     context,
-        //     MaterialPageRoute(builder: (_) => const ScreenRecetas()),
-        //   ),
-        // ),
+        SidebarSubItem(
+          title: 'Movimientos de Inventario',
+          icon: Icons.swap_horiz_rounded,
+          onTap: () => Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => const ScreenKardexInventario(),
+            ),
+          ),
+        ),
+        SidebarSubItem(
+          title: 'Alertas de Reposición',
+          icon: Icons.warning_amber_rounded,
+          onTap: () => Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => const ScreenAlertasInventario(),
+            ),
+          ),
+        ),
       ],
 
       SidebarSubItem.header('Clasificación'),

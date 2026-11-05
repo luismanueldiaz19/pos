@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter_thermal_printer/flutter_thermal_printer.dart';
 import 'package:flutter_thermal_printer/utils/printer.dart';
 import '../../model/company.dart';
+export 'imprimir_facturar.dart';
 
 /// Resultado de operaciones de impresión
 class ResultadoImpresora {
@@ -15,12 +16,18 @@ class ItemFactura {
   final String descripcion;
   final double cantidad;
   final double precioUnitario;
-  double get total => cantidad * precioUnitario;
+  final double itbis;
+  final String unidadMedida;
+  final double? valorTotal;
+  double get total => valorTotal ?? (cantidad * precioUnitario);
 
   const ItemFactura({
     required this.descripcion,
     required this.cantidad,
     required this.precioUnitario,
+    this.itbis = 0.0,
+    this.unidadMedida = 'UND',
+    this.valorTotal,
   });
 }
 
@@ -188,261 +195,6 @@ class ThermalPrinterService {
   }
 
   // ─────────────────────────────────────────────
-  // IMPRIMIR FACTURA (CON QR Y CÓDIGO DE SEGURIDAD OFICIAL e-CF DGII)
-  // ─────────────────────────────────────────────
-  Future<ResultadoImpresora> imprimirFactura({
-    required String nombreNegocio,
-    required String direccion,
-    required String rncOCedula,
-    required String numeroFactura,
-    String? ncf,
-    required DateTime fecha,
-    required List<ItemFactura> items,
-    required double subtotal,
-    required double impuesto,
-    required double descuento,
-    required double total,
-    String? cliente,
-    String? rncCliente,
-    String? nota,
-    String? tipoPago,
-    String? metodoPago,
-    double? montoRecibido,
-    double? devuelta,
-    String? qrUrl,
-    String? codigoSeguridad,
-    String? fechaFirma,
-    Printer? printer,
-  }) async {
-    try {
-      Printer? target = printer ?? _printerConectado;
-
-      if (target == null) {
-        final conexion = await conectarAutomaticamente();
-        if (!conexion.exito) {
-          return ResultadoImpresora(
-            exito: false,
-            mensaje: 'Sin impresora conectada. ${conexion.mensaje}',
-          );
-        }
-        target = _printerConectado!;
-      }
-
-      final nombreLimpio = _limpiarTexto(nombreNegocio.toUpperCase());
-      final direccionLimpia = _limpiarTexto(direccion);
-      final clienteLimpio = _limpiarTexto(cliente ?? "Consumidor Final");
-
-      final profile = await CapabilityProfile.load();
-      final generator = Generator(PaperSize.mm80, profile, spaceBetweenRows: 2);
-      List<int> bytes = [];
-
-      bytes += generator.reset();
-
-      // ── ENCABEZADO (Centrado) ──────
-      bytes += generator.text(
-        nombreLimpio,
-        styles: const PosStyles(align: PosAlign.center, bold: true),
-      );
-      bytes += generator.text(
-        direccionLimpia,
-        styles: const PosStyles(align: PosAlign.center),
-      );
-      bytes += generator.text(
-        'Tel.: ${Company.current.telefono}',
-        styles: const PosStyles(align: PosAlign.center),
-      );
-      bytes += generator.text(
-        'RNC: $rncOCedula',
-        styles: const PosStyles(align: PosAlign.center),
-      );
-      bytes += generator.emptyLines(1);
-
-      // ── INFO FACTURA (Izquierda) ──────
-      bytes += generator.text(
-        'Fecha: ${_formatFecha(fecha)}',
-        styles: const PosStyles(align: PosAlign.left),
-      );
-
-      final String tipoDoc = _resolverTituloComprobante(ncf, rncCliente);
-      bytes += generator.text(
-        tipoDoc,
-        styles: const PosStyles(align: PosAlign.left, bold: true),
-      );
-
-      final bool esEcf =
-          ncf != null && ncf.toUpperCase().startsWith('E') && ncf != 'S/N';
-
-      if (ncf != null && ncf.isNotEmpty && ncf != 'S/N') {
-        bytes += generator.text(
-          esEcf ? 'e-NCF: $ncf' : 'NCF: $ncf',
-          styles: const PosStyles(align: PosAlign.left, bold: true),
-        );
-      }
-
-      bytes += generator.text(
-        'Factura No. : $numeroFactura',
-        styles: const PosStyles(align: PosAlign.left),
-      );
-      if (rncCliente != null &&
-          rncCliente.isNotEmpty &&
-          !RegExp(r'^0+$').hasMatch(rncCliente.replaceAll('-', ''))) {
-        bytes += generator.text(
-          'RNC Cliente : $rncCliente',
-          styles: const PosStyles(align: PosAlign.left),
-        );
-      }
-      bytes += generator.text(
-        'Cliente     : $clienteLimpio',
-        styles: const PosStyles(align: PosAlign.left),
-      );
-      bytes += generator.text(
-        'CONDICION   : ${tipoPago ?? "CONTADO"}',
-        styles: const PosStyles(align: PosAlign.left),
-      );
-
-      if (nota != null && nota.isNotEmpty) {
-        bytes += generator.text(
-          'Nota        : ${_limpiarTexto(nota)}',
-          styles: const PosStyles(align: PosAlign.left),
-        );
-      }
-
-      // ── ENCABEZADO DE ITEMS ───────────────────────
-      bytes += generator.hr(ch: '=');
-
-      String buildRow(String c1, String c2, String c3, String c4) {
-        return c1.padRight(21) +
-            c2.padLeft(4) +
-            c3.padLeft(10) +
-            c4.padLeft(13);
-      }
-
-      bytes += generator.text(
-        buildRow('Descripcion', 'Cant', 'P.Unit', 'P.Total'),
-        styles: const PosStyles(align: PosAlign.left),
-      );
-      bytes += generator.hr(ch: '=');
-
-      // ── ITEMS ─────────────────────────────────────
-      for (final item in items) {
-        String desc = _truncate(_limpiarTexto(item.descripcion), 20);
-        String cant = _fmtCant(item.cantidad);
-        String pUnit = item.precioUnitario.toStringAsFixed(2);
-        String pTot = (item.cantidad * item.precioUnitario).toStringAsFixed(2);
-
-        bytes += generator.text(
-          buildRow(desc, cant, pUnit, pTot),
-          styles: const PosStyles(align: PosAlign.left),
-        );
-      }
-      bytes += generator.hr(ch: '=');
-
-      // ── TOTALES ───────────────────────────────────
-      String buildTotalRow(String label, String value) {
-        return label.padLeft(30) + value.padLeft(18);
-      }
-
-      bytes += generator.text(
-        buildTotalRow('Subtotal', _fmtMoneda(subtotal)),
-        styles: const PosStyles(align: PosAlign.left),
-      );
-      bytes += generator.text(
-        buildTotalRow('ITBIS', _fmtMoneda(impuesto)),
-        styles: const PosStyles(align: PosAlign.left),
-      );
-
-      if (descuento > 0) {
-        bytes += generator.text(
-          buildTotalRow('Descuento', '-${_fmtMoneda(descuento)}'),
-          styles: const PosStyles(align: PosAlign.left),
-        );
-      }
-
-      String buildTotalBig(String label, String value) {
-        return label.padLeft(10) + value.padLeft(14);
-      }
-
-      bytes += generator.text(
-        buildTotalBig('Total', _fmtMoneda(total)),
-        styles: const PosStyles(
-          align: PosAlign.left,
-          bold: true,
-          height: PosTextSize.size2,
-          width: PosTextSize.size2,
-        ),
-      );
-      bytes += generator.hr(ch: '=');
-
-      if (metodoPago != null || montoRecibido != null) {
-        if (metodoPago != null && montoRecibido != null) {
-          bytes += generator.text(
-            buildTotalRow(metodoPago.toUpperCase(), _fmtMoneda(montoRecibido)),
-            styles: const PosStyles(align: PosAlign.left),
-          );
-        }
-        if (devuelta != null && devuelta > 0) {
-          bytes += generator.text(
-            buildTotalRow('Cambio', _fmtMoneda(devuelta)),
-            styles: const PosStyles(align: PosAlign.left),
-          );
-        }
-        bytes += generator.hr(ch: '=');
-      }
-
-      // ── TIMBRE ELECTRÓNICO DGII (QR + CÓDIGO DE SEGURIDAD + FECHA FIRMA) ──
-      if (esEcf || (qrUrl != null && qrUrl.isNotEmpty)) {
-        bytes += generator.emptyLines(1);
-
-        final rncLimpio = rncOCedula.replaceAll(RegExp(r'[^0-9]'), '');
-        final effectiveQr = (qrUrl != null && qrUrl.isNotEmpty)
-            ? qrUrl
-            : 'https://fc.dgii.gov.do/TesteCF/ConsultaTimbreFC?RncEmisor=$rncLimpio&ENCF=${ncf ?? numeroFactura}&MontoTotal=${total.toStringAsFixed(2)}&CodigoSeguridad=${codigoSeguridad ?? "PENDTE"}';
-
-        bytes += generator.qrcode(effectiveQr);
-
-        if (codigoSeguridad != null && codigoSeguridad.isNotEmpty) {
-          bytes += generator.text(
-            'Codigo de Seguridad: $codigoSeguridad',
-            styles: const PosStyles(align: PosAlign.center, bold: true),
-          );
-        }
-        bytes += generator.text(
-          'Fecha de Firma Digital: ${fechaFirma ?? _formatFecha(fecha)}',
-          styles: const PosStyles(align: PosAlign.center),
-        );
-      }
-
-      bytes += generator.emptyLines(1);
-      bytes += generator.text(
-        'Revise su orden antes de retirarse. Para cualquier reclamo es indispensable presentar esta factura. No se devuelve efectivo.',
-        styles: const PosStyles(align: PosAlign.center),
-      );
-      bytes += generator.emptyLines(1);
-
-      // ── CRÉDITO DEL SISTEMA ───────────────────────
-      bytes += generator.text(
-        SystemInfo.ticketCredit,
-        styles: const PosStyles(
-          align: PosAlign.center,
-          fontType: PosFontType.fontB,
-        ),
-      );
-
-      bytes += generator.emptyLines(2);
-      bytes += generator.cut();
-
-      await _plugin.printData(target, bytes, longData: true);
-
-      return const ResultadoImpresora(
-        exito: true,
-        mensaje: 'Ticket impreso correctamente.',
-      );
-    } catch (e) {
-      return ResultadoImpresora(exito: false, mensaje: 'Error al imprimir: $e');
-    }
-  }
-
-  // ─────────────────────────────────────────────
   // IMPRIMIR REPORTE DE CIERRE DE CAJA
   // ─────────────────────────────────────────────
   Future<ResultadoImpresora> imprimirCierreCaja({
@@ -489,10 +241,14 @@ class ThermalPrinterService {
       );
 
       if (sesion['fecha_apertura'] != null) {
-        bytes += generator.text('Apertura: ${sesion['fecha_apertura']}');
+        bytes += generator.text(
+          'Apertura: ${_formatFechaEspanol(sesion['fecha_apertura'])}',
+        );
       }
       if (sesion['fecha_cierre'] != null) {
-        bytes += generator.text('Cierre  : ${sesion['fecha_cierre']}');
+        bytes += generator.text(
+          'Cierre  : ${_formatFechaEspanol(sesion['fecha_cierre'])}',
+        );
       } else {
         bytes += generator.text('Cierre  : EN CURSO');
       }
@@ -809,21 +565,36 @@ class ThermalPrinterService {
   // HELPERS PRIVADOS
   // ─────────────────────────────────────────────
 
-  String _resolverTituloComprobante(String? ncf, String? rncCliente) {
-    final upper = (ncf ?? '').toUpperCase();
-    if (upper.startsWith('E31')) return 'Factura de Credito Fiscal Electronica';
-    if (upper.startsWith('E32')) return 'Factura de Consumo Electronica';
-    if (upper.startsWith('E33')) return 'Nota de Debito Electronica';
-    if (upper.startsWith('E34')) return 'Nota de Credito Electronica';
-    if (upper.startsWith('E44')) return 'Regimenes Especiales Electronico';
-    if (upper.startsWith('E45')) return 'Comprobante Gubernamental Electronico';
-    if (upper.startsWith('E46')) return 'Comprobante Exportaciones Electronico';
+  String _formatFechaEspanol(dynamic valor) {
+    if (valor == null) return 'N/A';
+    DateTime? dt;
+    if (valor is DateTime) {
+      dt = valor;
+    } else if (valor is String) {
+      final s = valor.trim();
+      if (s.isEmpty) return 'N/A';
+      dt = DateTime.tryParse(s);
+      if (dt == null) {
+        final cleaned = s.replaceFirst(' ', 'T');
+        dt = DateTime.tryParse(cleaned);
+      }
+      if (dt == null) {
+        return s;
+      }
+    }
+    if (dt == null) return valor.toString();
 
-    return (rncCliente != null &&
-            rncCliente.replaceAll('-', '').length >= 9 &&
-            !RegExp(r'^0+$').hasMatch(rncCliente.replaceAll('-', '')))
-        ? 'Factura de Credito Fiscal'
-        : 'Factura de Consumo';
+    final local = dt.isUtc ? dt.toLocal() : dt;
+    final dia = local.day.toString().padLeft(2, '0');
+    final mes = local.month.toString().padLeft(2, '0');
+    final anio = local.year.toString();
+    final hora = local.hour;
+    final ampm = hora >= 12 ? 'PM' : 'AM';
+    final hora12 = hora == 0 ? 12 : (hora > 12 ? hora - 12 : hora);
+    final hStr = hora12.toString().padLeft(2, '0');
+    final mStr = local.minute.toString().padLeft(2, '0');
+
+    return '$dia/$mes/$anio $hStr:$mStr $ampm';
   }
 
   String _formatFecha(DateTime fecha) {

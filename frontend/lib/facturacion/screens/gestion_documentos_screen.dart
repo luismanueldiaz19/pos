@@ -423,6 +423,7 @@ class _GestionDocumentosScreenState
 
   Widget _buildFilterBar(String? token, FacturacionHistorialState state) {
     final estadoActual = state.filters['estado']?.toLowerCase();
+    final metodoActual = state.filters['metodo_pago']?.toLowerCase();
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -490,7 +491,77 @@ class _GestionDocumentosScreenState
                 }
               },
             ),
-            const SizedBox(width: 16),
+            const SizedBox(width: 12),
+            Container(
+              height: 22,
+              width: 1,
+              color: Colors.grey.shade300,
+            ),
+            const SizedBox(width: 12),
+
+            // Filtros de Método de Pago
+            const Text(
+              "Método:",
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 12,
+                color: Colors.grey,
+              ),
+            ),
+            const SizedBox(width: 8),
+            _buildChip(
+              label: "Todos",
+              isSelected: metodoActual == null,
+              onTap: () {
+                if (token != null) {
+                  final newFilters = Map<String, String>.from(state.filters);
+                  newFilters.remove('metodo_pago');
+                  ref
+                      .read(facturacionHistorialProvider.notifier)
+                      .updateFilters(token, newFilters, replace: true);
+                }
+              },
+            ),
+            _buildChip(
+              label: "Efectivo",
+              isSelected: metodoActual == 'efectivo',
+              onTap: () {
+                if (token != null) {
+                  ref
+                      .read(facturacionHistorialProvider.notifier)
+                      .updateFilters(token, {'metodo_pago': 'efectivo'});
+                }
+              },
+            ),
+            _buildChip(
+              label: "Tarjeta",
+              isSelected: metodoActual == 'tarjeta',
+              onTap: () {
+                if (token != null) {
+                  ref
+                      .read(facturacionHistorialProvider.notifier)
+                      .updateFilters(token, {'metodo_pago': 'tarjeta'});
+                }
+              },
+            ),
+            _buildChip(
+              label: "Transferencia",
+              isSelected: metodoActual == 'transferencia',
+              onTap: () {
+                if (token != null) {
+                  ref
+                      .read(facturacionHistorialProvider.notifier)
+                      .updateFilters(token, {'metodo_pago': 'transferencia'});
+                }
+              },
+            ),
+            const SizedBox(width: 12),
+            Container(
+              height: 22,
+              width: 1,
+              color: Colors.grey.shade300,
+            ),
+            const SizedBox(width: 12),
 
             // Selector de Fecha Desde
             SizedBox(

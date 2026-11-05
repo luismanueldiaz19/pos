@@ -62,13 +62,13 @@ class CxcNotifier extends StateNotifier<CxcState> {
     }
   }
 
-  Future<void> loadHistorialPagos() async {
+  Future<void> loadHistorialPagos({Map<String, String>? filters}) async {
     state = state.copyWith(isLoadingHistorial: true, errorHistorial: null);
     try {
       final token = ref.read(authProvider).token;
       if (token == null) throw Exception('No autenticado');
 
-      final pagos = await api.getHistorialPagos(token);
+      final pagos = await api.getHistorialPagos(token, filters: filters);
       state = state.copyWith(
         isLoadingHistorial: false,
         historialPagos: pagos,
@@ -80,6 +80,13 @@ class CxcNotifier extends StateNotifier<CxcState> {
         errorHistorial: e.toString(),
       );
     }
+  }
+
+  Future<String?> obtenerPdfReporteUrl(
+    String token, {
+    Map<String, String>? filters,
+  }) async {
+    return await api.getReportePdfUrl(token, filters: filters);
   }
 
   Future<bool> registrarPago(int cxcId, Map<String, dynamic> data) async {

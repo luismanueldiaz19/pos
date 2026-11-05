@@ -96,4 +96,31 @@ class InventarioApi {
     final errorMsg = decoded['message'] ?? decoded['error'] ?? response.body;
     throw Exception(errorMsg);
   }
+
+  Future<String?> getReportePdfUrl(
+    String token, {
+    required String tipoReporte,
+    Map<String, dynamic>? filters,
+  }) async {
+    final queryParams = <String, String>{
+      'tipo_reporte': tipoReporte,
+    };
+    if (filters != null) {
+      filters.forEach((k, v) {
+        if (v != null && v.toString().isNotEmpty) {
+          queryParams[k] = v.toString();
+        }
+      });
+    }
+
+    final queryString = Uri(queryParameters: queryParams).query;
+    final url = "$baseUrl/reporte/pdf-token?$queryString";
+
+    final response = await api.get(url, token: token);
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      return data['data']?['pdf_url'];
+    }
+    return null;
+  }
 }

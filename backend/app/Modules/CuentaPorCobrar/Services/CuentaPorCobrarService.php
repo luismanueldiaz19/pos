@@ -118,13 +118,45 @@ class CuentaPorCobrarService
         });
     }
 
-    public function getHistorialPagos(): Collection
+    public function getHistorialPagos(array $filters = []): Collection
     {
-        return PagoCxc::with([
+        $query = PagoCxc::with([
             'cuentaPorCobrar.cliente',
             'cuentaPorCobrar.factura',
             'cuentaDestino',
             'usuario'
-        ])->orderBy('fecha_pago', 'desc')->get();
+        ])->orderBy('fecha_pago', 'desc')
+          ->orderBy('id', 'desc');
+
+        if (!empty($filters['fecha_desde'])) {
+            $query->where('fecha_pago', '>=', $filters['fecha_desde']);
+        }
+
+        if (!empty($filters['fecha_hasta'])) {
+            $query->where('fecha_pago', '<=', $filters['fecha_hasta'] . ' 23:59:59');
+        }
+
+        if (!empty($filters['metodo_pago']) && strtolower((string)$filters['metodo_pago']) !== 'todos') {
+            $metodo = strtolower(trim((string)$filters['metodo_pago']));
+            $query->whereRaw('LOWER(metodo_pago) = ?', [$metodo]);
+        }
+
+        if (!empty($filters['search'])) {
+            $s = trim((string)$filters['search']);
+            $query->where(function ($q) use ($s) {
+                $q->where('referencia', 'like', "%{$s}%")
+                  ->orWhere('metodo_pago', 'like', "%{$s}%")
+                  ->orWhereHas('cuentaPorCobrar.cliente', function ($qc) use ($s) {
+                      $qc->where('nombre', 'like', "%{$s}%")
+                         ->orWhere('rnc_cedula', 'like', "%{$s}%");
+                  })
+                  ->orWhereHas('cuentaPorCobrar.factura', function ($qf) use ($s) {
+                      $qf->where('ncf', 'like', "%{$s}%")
+                         ->orWhere('id', 'like', "%{$s}%");
+                  });
+            });
+        }
+
+        return $query->get();
     }
 }

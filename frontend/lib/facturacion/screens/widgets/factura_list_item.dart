@@ -27,6 +27,22 @@ class FacturaListItem extends StatelessWidget {
     return AppColors.azulOscuro;
   }
 
+  Color _getMetodoColor(String metodo) {
+    final m = metodo.toUpperCase();
+    if (m.contains('TARJETA')) return Colors.indigo.shade600;
+    if (m.contains('TRANSFERENCIA')) return Colors.deepOrange.shade700;
+    if (m.contains('PENDIENTE')) return Colors.orange.shade800;
+    return Colors.green.shade700;
+  }
+
+  IconData _getMetodoIcon(String metodo) {
+    final m = metodo.toUpperCase();
+    if (m.contains('TARJETA')) return Icons.credit_card_rounded;
+    if (m.contains('TRANSFERENCIA')) return Icons.account_balance_rounded;
+    if (m.contains('PENDIENTE')) return Icons.pending_actions_rounded;
+    return Icons.payments_outlined;
+  }
+
   @override
   Widget build(BuildContext context) {
     final statusColor = _getStatusColor();
@@ -39,6 +55,10 @@ class FacturaListItem extends StatelessWidget {
         : (factura.createdAt != null
             ? FormatterNumber.formatFechaHora(factura.createdAt!)
             : 'N/A');
+
+    final metodoNombre = factura.metodoPagoNombre;
+    final metodoColor = _getMetodoColor(metodoNombre);
+    final metodoIcon = _getMetodoIcon(metodoNombre);
 
     return GestureDetector(
       onTap: onTap,
@@ -149,6 +169,34 @@ class FacturaListItem extends StatelessWidget {
                                       ),
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 5,
+                                      vertical: 1.5,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: metodoColor.withValues(alpha: 0.08),
+                                      borderRadius: BorderRadius.circular(4),
+                                      border: Border.all(
+                                        color: metodoColor.withValues(alpha: 0.3),
+                                      ),
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(metodoIcon, size: 10, color: metodoColor),
+                                        const SizedBox(width: 3),
+                                        Text(
+                                          metodoNombre,
+                                          style: TextStyle(
+                                            fontSize: 8.5,
+                                            fontWeight: FontWeight.bold,
+                                            color: metodoColor,
+                                          ),
+                                        ),
+                                      ],
                                     ),
                                   ),
                                 ],

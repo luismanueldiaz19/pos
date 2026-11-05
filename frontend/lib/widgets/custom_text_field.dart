@@ -84,6 +84,7 @@ class CustomTextField extends StatelessWidget {
                         child: Icon(suffixIcon, size: 16, color: Colors.grey),
                       )
                     : null),
+            isDense: true,
             filled: true,
             fillColor: Colors.grey.shade50,
             border: OutlineInputBorder(

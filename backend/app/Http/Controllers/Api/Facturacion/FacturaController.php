@@ -52,7 +52,7 @@ class FacturaController extends Controller {
 
     public function index(Request $request)
     {
-        $query = Factura::with(['cliente', 'detalles', 'user', 'ecfDocumento'])
+        $query = Factura::with(['cliente', 'detalles', 'user', 'ecfDocumento', 'pagos'])
             ->orderBy('id', 'desc');
 
         // Si no es admin, solo puede ver sus propias facturas
@@ -83,8 +83,24 @@ class FacturaController extends Controller {
             $query->where('cliente_id', $request->cliente_id);
         }
 
-        if ($request->filled('estado')) {
+        if ($request->filled('estado') && strtolower((string)$request->estado) !== 'todos') {
             $query->where('estado', $request->estado);
+        }
+
+        if ($request->filled('metodo_pago') && strtolower((string)$request->metodo_pago) !== 'todos') {
+            $metodo = strtolower(trim((string)$request->metodo_pago));
+            if ($metodo === 'credito' || $metodo === 'pendiente') {
+                $query->where(function ($q) use ($metodo) {
+                    $q->where('estado', 'pendiente')
+                      ->orWhereHas('pagos', function ($qp) use ($metodo) {
+                          $qp->whereRaw('LOWER(metodo_pago) = ?', [$metodo]);
+                      });
+                });
+            } else {
+                $query->whereHas('pagos', function ($q) use ($metodo) {
+                    $q->whereRaw('LOWER(metodo_pago) = ?', [$metodo]);
+                });
+            }
         }
 
         if ($request->filled('caja_sesion_id')) {

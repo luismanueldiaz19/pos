@@ -10,6 +10,7 @@ use App\Modules\CuentaPorCobrar\Services\CuentaPorCobrarService;
 use App\Modules\Shared\Traits\ApiResponseTrait;
 use App\Traits\HasIdempotency;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 
 class CuentaPorCobrarController extends Controller
 {
@@ -51,12 +52,37 @@ class CuentaPorCobrarController extends Controller
         }
     }
 
-    public function historialPagos(): JsonResponse
+    public function historialPagos(Request $request): JsonResponse
     {
-        $pagos = $this->cxcService->getHistorialPagos();
+        $pagos = $this->cxcService->getHistorialPagos($request->all());
         return $this->successResponse(
             data: $pagos,
             message: 'Historial de cobros realizados'
+        );
+    }
+
+    public function generarTokenReporte(Request $request, \App\Modules\CuentaPorCobrar\Services\CobroPdfService $cobroPdfService): JsonResponse
+    {
+        $companyData = [
+            'company_name'    => $request->company_name,
+            'company_rnc'     => $request->company_rnc,
+            'company_address' => $request->company_address,
+            'company_phone'   => $request->company_phone,
+        ];
+
+        $token = $cobroPdfService->generarTokenReporte(
+            $request->all(),
+            $companyData,
+            $request->user()?->name,
+            $request->user()?->id
+        );
+
+        return $this->successResponse(
+            data: [
+                'token'   => $token,
+                'pdf_url' => "/d/{$token}",
+            ],
+            message: 'Enlace para reporte de cobros generado correctamente'
         );
     }
 }

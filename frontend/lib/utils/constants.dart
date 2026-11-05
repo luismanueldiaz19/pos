@@ -24,7 +24,7 @@ const String apiUrl = '$hostName${AppConfig.apiVersion}';
 const String logoSinFondo = AppConfig.logoSinFondo;
 const String logoFactura = AppConfig.logoFactura;
 
-const String background = AppConfig.backgroundLibreria;
+const String background = AppConfig.backgroundFoodFast;
 
 const double kwidth = 250;
 

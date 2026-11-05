@@ -133,4 +133,16 @@ class InventarioNotifier extends StateNotifier<InventarioState> {
       return false;
     }
   }
+
+  Future<String?> obtenerPdfReporteUrl(
+    String token, {
+    required String tipoReporte,
+    Map<String, dynamic>? filters,
+  }) async {
+    try {
+      return await _api.getReportePdfUrl(token, tipoReporte: tipoReporte, filters: filters);
+    } catch (_) {
+      return null;
+    }
+  }
 }

@@ -58,6 +58,54 @@ class DocumentLinkController extends Controller
             return $pdf->stream('reporte_facturas_' . now()->format('Ymd_His') . '.pdf');
         }
 
+        if ($data['type'] === 'cobros_reporte' || $data['type'] === 'cxc_reporte') {
+            $cobroPdfService = app(\App\Modules\CuentaPorCobrar\Services\CobroPdfService::class);
+            $user = !empty($data['userId']) ? User::find($data['userId']) : null;
+            $pdf = $cobroPdfService->generarReportePdf(
+                $data['filters'] ?? [],
+                $data['companyData'] ?? [],
+                $data['usuarioName'] ?? null,
+                $user
+            );
+            return $pdf->stream('reporte_cobros_' . now()->format('Ymd_His') . '.pdf');
+        }
+
+        if ($data['type'] === 'inventario_existencias_reporte') {
+            $inventarioPdfService = app(\App\Modules\Inventario\Services\InventarioPdfService::class);
+            $user = !empty($data['userId']) ? User::find($data['userId']) : null;
+            $pdf = $inventarioPdfService->generarReporteExistenciasPdf(
+                $data['filters'] ?? [],
+                $data['companyData'] ?? [],
+                $data['usuarioName'] ?? null,
+                $user
+            );
+            return $pdf->stream('reporte_existencias_' . now()->format('Ymd_His') . '.pdf');
+        }
+
+        if ($data['type'] === 'inventario_kardex_reporte') {
+            $inventarioPdfService = app(\App\Modules\Inventario\Services\InventarioPdfService::class);
+            $user = !empty($data['userId']) ? User::find($data['userId']) : null;
+            $pdf = $inventarioPdfService->generarReporteKardexPdf(
+                $data['filters'] ?? [],
+                $data['companyData'] ?? [],
+                $data['usuarioName'] ?? null,
+                $user
+            );
+            return $pdf->stream('reporte_kardex_' . now()->format('Ymd_His') . '.pdf');
+        }
+
+        if ($data['type'] === 'inventario_alertas_reporte') {
+            $inventarioPdfService = app(\App\Modules\Inventario\Services\InventarioPdfService::class);
+            $user = !empty($data['userId']) ? User::find($data['userId']) : null;
+            $pdf = $inventarioPdfService->generarReporteAlertasPdf(
+                $data['filters'] ?? [],
+                $data['companyData'] ?? [],
+                $data['usuarioName'] ?? null,
+                $user
+            );
+            return $pdf->stream('reporte_alertas_' . now()->format('Ymd_His') . '.pdf');
+        }
+
         abort(404, 'Tipo de documento no soportado.');
     }
 

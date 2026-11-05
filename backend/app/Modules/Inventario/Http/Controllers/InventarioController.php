@@ -110,4 +110,37 @@ class InventarioController extends Controller
             );
         }
     }
+
+    /**
+     * Generar token de enlace corto para previsualizar / descargar reportes en PDF
+     */
+    public function generarTokenReporte(
+        Request $request,
+        \App\Modules\Inventario\Services\InventarioPdfService $inventarioPdfService
+    ): JsonResponse {
+        $tipoReporte = (string) $request->input('tipo_reporte', 'existencias');
+
+        $companyData = [
+            'company_name'    => $request->company_name,
+            'company_rnc'     => $request->company_rnc,
+            'company_address' => $request->company_address,
+            'company_phone'   => $request->company_phone,
+        ];
+
+        $token = $inventarioPdfService->generarTokenReporte(
+            $tipoReporte,
+            $request->all(),
+            $companyData,
+            $request->user()?->name,
+            $request->user()?->id
+        );
+
+        return $this->successResponse(
+            data: [
+                'token'   => $token,
+                'pdf_url' => "/d/{$token}",
+            ],
+            message: "Enlace para reporte de inventario ({$tipoReporte}) generado correctamente"
+        );
+    }
 }

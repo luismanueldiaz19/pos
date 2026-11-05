@@ -32,6 +32,7 @@ class Factura {
   final List<Detalle>? detalles;
   final User? user;
   final EcfSummary? ecfDocumento;
+  final List<PagoFactura>? pagos;
 
   Factura({
     this.id,
@@ -53,6 +54,7 @@ class Factura {
     this.detalles,
     this.user,
     this.ecfDocumento,
+    this.pagos,
   });
 
   Factura copyWith({
@@ -74,6 +76,7 @@ class Factura {
     List<Detalle>? detalles,
     User? user,
     EcfSummary? ecfDocumento,
+    List<PagoFactura>? pagos,
   }) => Factura(
     id: id ?? this.id,
     clienteId: clienteId ?? this.clienteId,
@@ -93,7 +96,27 @@ class Factura {
     detalles: detalles ?? this.detalles,
     user: user ?? this.user,
     ecfDocumento: ecfDocumento ?? this.ecfDocumento,
+    pagos: pagos ?? this.pagos,
   );
+
+  String get metodoPagoNombre {
+    if (pagos != null && pagos!.isNotEmpty) {
+      final metodos = pagos!
+          .map((p) => p.metodoPago?.trim().toUpperCase())
+          .where((m) => m != null && m.isNotEmpty)
+          .cast<String>()
+          .toSet();
+      if (metodos.isNotEmpty) {
+        return metodos.join(', ');
+      }
+    }
+    if (estado?.toLowerCase() == 'pendiente') {
+      return 'PENDIENTE';
+    }
+    return (tipoFactura != null && tipoFactura!.isNotEmpty)
+        ? tipoFactura!.toUpperCase()
+        : 'EFECTIVO';
+  }
 
   factory Factura.fromJson(Map<String, dynamic> json) => Factura(
     id: json["id"],
@@ -129,6 +152,11 @@ class Factura {
     ecfDocumento: json["ecf_documento"] != null
         ? EcfSummary.fromJson(Map<String, dynamic>.from(json["ecf_documento"]))
         : null,
+    pagos: json["pagos"] != null
+        ? List<PagoFactura>.from(
+            (json["pagos"] as List).map((x) => PagoFactura.fromJson(x)),
+          )
+        : null,
   );
 
   Map<String, dynamic> toJson() => {
@@ -153,5 +181,44 @@ class Factura {
     "detalles": List<dynamic>.from((detalles ?? []).map((x) => x.toJson())),
     "user": user?.toJson(),
     "ecf_documento": ecfDocumento?.toJson(),
+    "pagos": pagos != null
+        ? List<dynamic>.from(pagos!.map((x) => x.toJson()))
+        : null,
   };
+}
+
+class PagoFactura {
+  final int? id;
+  final String? metodoPago;
+  final String? montoPagado;
+  final String? montoRecibido;
+  final String? devuelta;
+  final String? referenciaPago;
+
+  PagoFactura({
+    this.id,
+    this.metodoPago,
+    this.montoPagado,
+    this.montoRecibido,
+    this.devuelta,
+    this.referenciaPago,
+  });
+
+  factory PagoFactura.fromJson(Map<String, dynamic> json) => PagoFactura(
+        id: json["id"],
+        metodoPago: json["metodo_pago"]?.toString(),
+        montoPagado: json["monto_pagado"]?.toString(),
+        montoRecibido: json["monto_recibido"]?.toString(),
+        devuelta: json["devuelta"]?.toString(),
+        referenciaPago: json["referencia_pago"]?.toString(),
+      );
+
+  Map<String, dynamic> toJson() => {
+        "id": id,
+        "metodo_pago": metodoPago,
+        "monto_pagado": montoPagado,
+        "monto_recibido": montoRecibido,
+        "devuelta": devuelta,
+        "referencia_pago": referenciaPago,
+      };
 }

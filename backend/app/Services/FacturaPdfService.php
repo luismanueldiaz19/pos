@@ -19,7 +19,7 @@ class FacturaPdfService
      */
     public function buildFilteredQuery(array $filters = [], $user = null): Builder
     {
-        $query = Factura::with(['cliente', 'user', 'ecfDocumento', 'detalles'])
+        $query = Factura::with(['cliente', 'user', 'ecfDocumento', 'detalles', 'pagos'])
             ->orderBy('fecha_emision', 'desc')
             ->orderBy('id', 'desc');
 
@@ -51,6 +51,22 @@ class FacturaPdfService
         if (!empty($filters['estado']) && strtolower((string)$filters['estado']) !== 'todos') {
             $estado = strtolower(trim((string)$filters['estado']));
             $query->whereRaw('LOWER(estado) = ?', [$estado]);
+        }
+
+        if (!empty($filters['metodo_pago']) && strtolower((string)$filters['metodo_pago']) !== 'todos') {
+            $metodo = strtolower(trim((string)$filters['metodo_pago']));
+            if ($metodo === 'credito' || $metodo === 'pendiente') {
+                $query->where(function (Builder $q) use ($metodo) {
+                    $q->where('estado', 'pendiente')
+                      ->orWhereHas('pagos', function (Builder $qp) use ($metodo) {
+                          $qp->whereRaw('LOWER(metodo_pago) = ?', [$metodo]);
+                      });
+                });
+            } else {
+                $query->whereHas('pagos', function (Builder $q) use ($metodo) {
+                    $q->whereRaw('LOWER(metodo_pago) = ?', [$metodo]);
+                });
+            }
         }
 
         if (!empty($filters['cliente_id'])) {
@@ -88,6 +104,15 @@ class FacturaPdfService
             'total_anulado'   => (float) $facturas->filter(fn($f) => strtolower((string)$f->estado) === 'anulada')->sum('total'),
         ];
 
+        // Desglose agrupado por método de pago para el período filtrado (facturas válidas)
+        $facturaIds = $validas->pluck('id');
+        $desgloseMetodos = \Illuminate\Support\Facades\DB::table('pagos')
+            ->whereIn('factura_id', $facturaIds)
+            ->selectRaw('LOWER(metodo_pago) as metodo, sum(monto_pagado) as total, count(distinct factura_id) as cantidad')
+            ->groupBy(\Illuminate\Support\Facades\DB::raw('LOWER(metodo_pago)'))
+            ->orderByDesc('total')
+            ->get();
+
         $company = $this->prepareCompanyData($companyData);
         $base64Logo = $this->getCompanyLogoBase64();
         $fechaGeneracion = Carbon::now();
@@ -95,6 +120,7 @@ class FacturaPdfService
         $pdf = Pdf::loadView('pdf.facturas_reporte', [
             'facturas'        => $facturas,
             'totales'         => $totales,
+            'desgloseMetodos' => $desgloseMetodos,
             'filters'         => $filters,
             'company'         => $company,
             'base64Logo'      => $base64Logo,

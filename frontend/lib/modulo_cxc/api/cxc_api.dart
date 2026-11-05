@@ -42,8 +42,20 @@ class CxcApi {
     }
   }
 
-  Future<List<PagoCxc>> getHistorialPagos(String token) async {
-    final response = await api.get("$baseUrl/pagos/historial", token: token);
+  Future<List<PagoCxc>> getHistorialPagos(
+    String token, {
+    Map<String, String>? filters,
+  }) async {
+    String query = "";
+    if (filters != null && filters.isNotEmpty) {
+      final parts = filters.entries
+          .where((e) => e.value.trim().isNotEmpty)
+          .map((e) => "${Uri.encodeComponent(e.key)}=${Uri.encodeComponent(e.value)}");
+      if (parts.isNotEmpty) {
+        query = "?${parts.join("&")}";
+      }
+    }
+    final response = await api.get("$baseUrl/pagos/historial$query", token: token);
 
     if (response.statusCode == 200) {
       final dynamic body = jsonDecode(response.body);
@@ -53,6 +65,34 @@ class CxcApi {
       return data.map((json) => PagoCxc.fromJson(json)).toList();
     } else {
       throw Exception('Error al cargar historial de pagos: ${response.body}');
+    }
+  }
+
+  Future<String?> getReportePdfUrl(
+    String token, {
+    Map<String, String>? filters,
+  }) async {
+    try {
+      String query = "";
+      if (filters != null && filters.isNotEmpty) {
+        final parts = filters.entries
+            .where((e) => e.value.trim().isNotEmpty)
+            .map((e) => "${Uri.encodeComponent(e.key)}=${Uri.encodeComponent(e.value)}");
+        if (parts.isNotEmpty) {
+          query = "?${parts.join("&")}";
+        }
+      }
+      final response = await api.get(
+        "$baseUrl/pagos/reporte/pdf-token$query",
+        token: token,
+      );
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        return data['data']?['pdf_url'];
+      }
+      return null;
+    } catch (e) {
+      return null;
     }
   }
 }

@@ -13,6 +13,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::post('/ajuste', [InventarioController::class, 'ajuste']);
         Route::get('/existencias', [InventarioController::class, 'existencias']);
         Route::get('/alertas-stock', [InventarioController::class, 'alertasStock']);
+        Route::get('/reporte/pdf-token', [InventarioController::class, 'generarTokenReporte']);
     });
 
     // Gestión de recetas y escandallos

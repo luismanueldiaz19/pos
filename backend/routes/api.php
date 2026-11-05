@@ -105,6 +105,9 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::get('/inventario/alertas-stock', [InventarioController::class, 'alertasStock'])
         ->middleware('permission:ver_inventario');
 
+    Route::get('/inventario/reporte/pdf-token', [InventarioController::class, 'generarTokenReporte'])
+        ->middleware('permission:ver_inventario');
+
     // ================= CAJA Y TURNOS (Módulo Caja) =================
     Route::get('/cajas', [CajaController::class, 'index']);
     Route::get('/turnos', [CajaController::class, 'turnos']);

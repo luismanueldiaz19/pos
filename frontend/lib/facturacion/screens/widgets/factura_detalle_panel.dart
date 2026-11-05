@@ -53,7 +53,9 @@ class _FacturaDetallePanelState extends State<FacturaDetallePanel>
   Color _getEcfStatusColor(String estadoDgii) {
     final e = estadoDgii.toUpperCase();
     if (e.contains('ACEPTADO')) return Colors.teal.shade700;
-    if (e.contains('PROCESO') || e == 'PENDIENTE') return Colors.orange.shade700;
+    if (e.contains('PROCESO') || e == 'PENDIENTE') {
+      return Colors.orange.shade700;
+    }
     return Colors.red.shade700;
   }
 
@@ -64,10 +66,13 @@ class _FacturaDetallePanelState extends State<FacturaDetallePanel>
         final desc = det.descripcion ?? det.producto?.nombre ?? 'Ítem';
         final cant = double.tryParse(det.cantidad?.toString() ?? '1') ?? 1.0;
         final precio = double.tryParse(det.precio?.toString() ?? '0') ?? 0.0;
+        final itbis = double.tryParse(det.itbis?.toString() ?? '0') ?? 0.0;
         return ItemFactura(
           descripcion: desc,
           cantidad: cant,
           precioUnitario: precio,
+          itbis: itbis,
+          unidadMedida: 'UND',
         );
       }).toList();
 
@@ -77,7 +82,7 @@ class _FacturaDetallePanelState extends State<FacturaDetallePanel>
       final tot = double.tryParse(factura.total ?? '0') ?? 0;
       final ecf = factura.ecfDocumento;
 
-      final res = await ThermalPrinterService.instance.imprimirFactura(
+      final res = await ImprimirFacturar.instance.imprimirFactura(
         nombreNegocio: Company.current.nombre,
         direccion: Company.current.direccionCompleta,
         rncOCedula: Company.current.rnc,
@@ -95,6 +100,8 @@ class _FacturaDetallePanelState extends State<FacturaDetallePanel>
         qrUrl: ecf?.qrUrl,
         codigoSeguridad: ecf?.codigoSeguridad,
         fechaFirma: ecf?.fechaHoraFirma,
+        cajero: factura.user?.name ?? 'Cajera',
+        modoTemporalVenta: true,
       );
 
       if (mounted) {
@@ -204,9 +211,7 @@ class _FacturaDetallePanelState extends State<FacturaDetallePanel>
     if (widget.isLoading) {
       return Container(
         color: const Color(0xFFF8F9FA),
-        child: const Center(
-          child: CircularProgressIndicator(strokeWidth: 2),
-        ),
+        child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
       );
     }
 
@@ -253,15 +258,13 @@ class _FacturaDetallePanelState extends State<FacturaDetallePanel>
     final fechaStr = f.fechaEmision != null
         ? FormatterNumber.formatFechaHora(f.fechaEmision!)
         : (f.createdAt != null
-            ? FormatterNumber.formatFechaHora(f.createdAt!)
-            : 'N/A');
+              ? FormatterNumber.formatFechaHora(f.createdAt!)
+              : 'N/A');
 
     return AnimatedSwitcher(
       duration: const Duration(milliseconds: 220),
-      transitionBuilder: (child, animation) => FadeTransition(
-        opacity: animation,
-        child: child,
-      ),
+      transitionBuilder: (child, animation) =>
+          FadeTransition(opacity: animation, child: child),
       child: Container(
         key: ValueKey(f.id),
         color: const Color(0xFFF8F9FA),
@@ -335,7 +338,8 @@ class _FacturaDetallePanelState extends State<FacturaDetallePanel>
                                           if (uri != null) {
                                             await launchUrl(
                                               uri,
-                                              mode: LaunchMode.externalApplication,
+                                              mode: LaunchMode
+                                                  .externalApplication,
                                             );
                                           }
                                         }
@@ -347,8 +351,9 @@ class _FacturaDetallePanelState extends State<FacturaDetallePanel>
                                       vertical: 2,
                                     ),
                                     decoration: BoxDecoration(
-                                      color: _getEcfStatusColor(ecf.estadoDgii)
-                                          .withValues(alpha: 0.1),
+                                      color: _getEcfStatusColor(
+                                        ecf.estadoDgii,
+                                      ).withValues(alpha: 0.1),
                                       borderRadius: BorderRadius.circular(8),
                                       border: Border.all(
                                         color: _getEcfStatusColor(
@@ -382,6 +387,52 @@ class _FacturaDetallePanelState extends State<FacturaDetallePanel>
                                   ),
                                 ),
                               ),
+                            Builder(
+                              builder: (context) {
+                                final metodoNombre = f.metodoPagoNombre;
+                                Color color = Colors.green.shade700;
+                                IconData icon = Icons.payments_outlined;
+                                final m = metodoNombre.toUpperCase();
+                                if (m.contains('TARJETA')) {
+                                  color = Colors.indigo.shade600;
+                                  icon = Icons.credit_card_rounded;
+                                } else if (m.contains('TRANSFERENCIA')) {
+                                  color = Colors.deepOrange.shade700;
+                                  icon = Icons.account_balance_rounded;
+                                } else if (m.contains('PENDIENTE')) {
+                                  color = Colors.orange.shade800;
+                                  icon = Icons.pending_actions_rounded;
+                                }
+                                return Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 7,
+                                    vertical: 2,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: color.withValues(alpha: 0.1),
+                                    borderRadius: BorderRadius.circular(8),
+                                    border: Border.all(
+                                      color: color.withValues(alpha: 0.4),
+                                    ),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(icon, size: 11, color: color),
+                                      const SizedBox(width: 4),
+                                      Text(
+                                        metodoNombre,
+                                        style: TextStyle(
+                                          color: color,
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 9.5,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              },
+                            ),
                           ],
                         ),
                         const SizedBox(height: 3),

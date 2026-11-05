@@ -26,7 +26,6 @@ import '../../modulo_mesas/models/mesa_model.dart';
 import '../../modulo_mesas/providers/mesas_provider.dart';
 import '../widgets/seleccionar_mesa_dialog.dart';
 import 'apertura_caja_page.dart';
-import '../../widgets/custom_confirm_dialog.dart';
 
 class CrearFacturaPage extends ConsumerStatefulWidget {
   final MesaModel? mesaOrigen;
@@ -41,7 +40,7 @@ class _CrearFacturaPageState extends ConsumerState<CrearFacturaPage> {
   final ComprobanteRepository _comprobanteRepo = ComprobanteRepository();
   final FacturacionService _facturaService = FacturacionService();
   final PedidoService _pedidoService = PedidoService();
-  final ThermalPrinterService _printer = ThermalPrinterService.instance;
+  final ImprimirFacturar _printer = ImprimirFacturar.instance;
   final TextEditingController _searchController = TextEditingController();
   List<Comprobante> _comprobantes = [];
   String _searchQuery = "";
@@ -245,23 +244,8 @@ class _CrearFacturaPageState extends ConsumerState<CrearFacturaPage> {
       builder: (_) => const Center(child: CircularProgressIndicator()),
     );
 
-    final conexion = await _printer.pingImpresora();
-
     if (mounted) {
       Navigator.pop(context); // cerrar loader
-    }
-
-    if (!conexion.exito) {
-      final continuar = await CustomConfirmDialog.show(
-        context,
-        title: '⚠️ Error de Impresora',
-        message:
-            '${conexion.mensaje}\n\n¿Desea registrar la venta de todos modos (sin imprimir ticket)?',
-        confirmText: 'Sí, continuar',
-        cancelText: 'Cancelar venta',
-        primaryColor: Colors.orange,
-      );
-      if (continuar != true) return;
     }
 
     Map<String, dynamic>? pagoInfo;
@@ -348,6 +332,8 @@ class _CrearFacturaPageState extends ConsumerState<CrearFacturaPage> {
               descripcion: item.descripcion,
               cantidad: item.cantidad,
               precioUnitario: item.precio,
+              itbis: item.montoItbis,
+              unidadMedida: 'UND',
             ),
           )
           .toList(),
@@ -360,11 +346,13 @@ class _CrearFacturaPageState extends ConsumerState<CrearFacturaPage> {
       nota: state.nota.isNotEmpty ? state.nota : null,
       tipoPago: state.tipoFactura == 'contado' ? 'CONTADO' : 'CREDITO',
       metodoPago: pagoInfo?['metodo_pago']?.toString().toUpperCase(),
-      montoRecibido: pagoInfo?['monto_recibido'],
-      devuelta: pagoInfo?['devuelta'],
+      montoRecibido: double.tryParse(pagoInfo?['monto_recibido']?.toString() ?? ''),
+      devuelta: double.tryParse(pagoInfo?['devuelta']?.toString() ?? ''),
       qrUrl: facturaData?['qr_url']?.toString(),
       codigoSeguridad: facturaData?['codigo_seguridad']?.toString(),
       fechaFirma: facturaData?['fecha_hora_firma']?.toString(),
+      cajero: ref.read(authProvider).user?.name ?? 'Cajera',
+      modoTemporalVenta: true,
     );
 
     if (!resultado.exito && mounted) {
@@ -497,24 +485,24 @@ class _CrearFacturaPageState extends ConsumerState<CrearFacturaPage> {
           ),
           const SizedBox(width: 8),
           // 🖨️ Botón de prueba de impresora
-          _buildCircleButton(
-            icon: Icons.receipt_long_outlined,
-            color: Colors.blueAccent,
-            tooltip: 'Probar Impresora',
-            onTap: () async {
-              final resultado = await _printer.imprimirPrueba();
+          // _buildCircleButton(
+          //   icon: Icons.receipt_long_outlined,
+          //   color: Colors.blueAccent,
+          //   tooltip: 'Probar Impresora',
+          //   onTap: () async {
+          //     final resultado = await _printer.imprimirFactura();
 
-              if (mounted) {
-                showToast(
-                  context,
-                  resultado.mensaje,
-                  bgColor: resultado.exito
-                      ? Colors.teal
-                      : Colors.orange.shade700,
-                );
-              }
-            },
-          ),
+          //     if (mounted) {
+          //       showToast(
+          //         context,
+          //         resultado.mensaje,
+          //         bgColor: resultado.exito
+          //             ? Colors.teal
+          //             : Colors.orange.shade700,
+          //       );
+          //     }
+          //   },
+          // ),
           const SizedBox(width: 8),
           _buildCircleButton(
             icon: Icons.delete_sweep_outlined,
