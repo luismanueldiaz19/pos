@@ -116,6 +116,46 @@ class ThermalPrinterService {
   }
 
   // ─────────────────────────────────────────────
+  // ABRIR CAJÓN DE DINERO (GAVETA RJ11 CONECTADA AL PRINTER)
+  // ─────────────────────────────────────────────
+  Future<ResultadoImpresora> abrirCajon({Printer? printer}) async {
+    try {
+      Printer? target = printer ?? _printerConectado;
+
+      if (target == null) {
+        final conexion = await conectarAutomaticamente();
+        if (!conexion.exito) {
+          return ResultadoImpresora(
+            exito: false,
+            mensaje: 'Sin impresora conectada. ${conexion.mensaje}',
+          );
+        }
+        target = _printerConectado!;
+      }
+
+      // Comando estándar ESC/POS (ESC p m t1 t2) para abrir gaveta por Pin 2 y Pin 5
+      final List<int> bytes = [
+        0x1B, 0x40, // ESC @ (Inicializar)
+        0x1B, 0x70, 0x00, 0x19, 0xFA, // Pin 2 (m=0, 50ms ON, 500ms OFF)
+        0x1B, 0x70, 0x01, 0x19, 0xFA, // Pin 5 (m=1, 50ms ON, 500ms OFF)
+      ];
+
+      await _plugin.printData(target, bytes, longData: true);
+
+      return const ResultadoImpresora(
+        exito: true,
+        mensaje: 'Cajón de dinero abierto.',
+      );
+    } catch (e) {
+      _printerConectado = null;
+      return ResultadoImpresora(
+        exito: false,
+        mensaje: 'Error al abrir el cajón: $e',
+      );
+    }
+  }
+
+  // ─────────────────────────────────────────────
   // TEST: HOLA MUNDO  (verifica que la impresora funciona)
   // ─────────────────────────────────────────────
   Future<ResultadoImpresora> imprimirPrueba() async {

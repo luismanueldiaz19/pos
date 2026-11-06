@@ -51,6 +51,7 @@ class ImprimirFacturar {
     bool modoTemporalVenta = true,
     bool? imprimirCopia,
     bool esCopia = false,
+    bool abrirCajon = false,
     Printer? printer,
   }) async {
     try {
@@ -61,6 +62,15 @@ class ImprimirFacturar {
       // Determinar si corresponde imprimir copia para la cajera (cuadre de caja)
       final bool debeImprimirCopia =
           !esCopia && (imprimirCopia ?? _requiereCopia(metodoPago, tipoPago));
+
+      // ── APERTURA DE CAJÓN DE DINERO (UNA SOLA VEZ AL INICIO) ─────────
+      // Solo en el primer ticket/impresión inicial, NUNCA en la copia para evitar doble apertura.
+      if (abrirCajon && !esCopia) {
+        bytes += [
+          0x1B, 0x70, 0x00, 0x19, 0xFA, // Pin 2 (m=0, 50ms ON, 500ms OFF)
+          0x1B, 0x70, 0x01, 0x19, 0xFA, // Pin 5 (m=1, 50ms ON, 500ms OFF)
+        ];
+      }
 
       // ── TICKET 1: ORIGINAL (para el cliente) ──────────────────────
       bytes += generator.reset();

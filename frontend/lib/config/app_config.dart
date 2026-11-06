@@ -11,9 +11,9 @@ class AppConfig {
   // 1. CONEXIÓN AL BACKEND / SERVIDOR
   // ──────────────────────────────────────────────────────────────────────────
   /// URL del servidor API (sin barra final '/').
-  static const String serverUrl = 'https://cafeteria.comunidadfantino.site';
+  // static const String serverUrl = 'https://cafeteria.comunidadfantino.site';
   // static const String serverUrl = 'https://tienda.comunidadfantino.site';
-  // static const String serverUrl = 'http://127.0.0.1:8000';
+  static const String serverUrl = 'http://127.0.0.1:8000';
 
   /// Versión de la API backend (generalmente '/api/v2')
   static const String apiVersion = '/api/v2';

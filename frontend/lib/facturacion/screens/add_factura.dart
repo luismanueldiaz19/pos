@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../modulo_cliente/models/cliente.dart';
 import '../../modulo_cliente/providers/cliente_admin_provider.dart';
 import '../../modulo_producto/models/producto.dart';
 import '../../modulo_producto/providers/producto_provider.dart';
 import '../../modulo_producto/providers/producto_state.dart';
+import '../../modulo_producto/services/producto_api.dart';
 import '../../utils/helpers.dart';
 import '../../model/company.dart';
 import '../../providers/auth_provider.dart';
@@ -42,21 +44,29 @@ class _CrearFacturaPageState extends ConsumerState<CrearFacturaPage> {
   final PedidoService _pedidoService = PedidoService();
   final ImprimirFacturar _printer = ImprimirFacturar.instance;
   final TextEditingController _searchController = TextEditingController();
+  final FocusNode _searchFocusNode = FocusNode();
   List<Comprobante> _comprobantes = [];
   String _searchQuery = "";
   bool _imprimirAutomaticamente = true;
   MesaModel? _mesaVinculada;
+  bool _isProcessingVenta = false;
 
   @override
   void initState() {
     super.initState();
     _mesaVinculada = widget.mesaOrigen;
     _initData();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _searchFocusNode.requestFocus();
+      }
+    });
   }
 
   @override
   void dispose() {
     _searchController.dispose();
+    _searchFocusNode.dispose();
     super.dispose();
   }
 
@@ -106,12 +116,94 @@ class _CrearFacturaPageState extends ConsumerState<CrearFacturaPage> {
     String codigo,
     FacturacionNotifier factNotifier,
   ) async {
-    if (codigo.trim().isEmpty) return;
+    final codigoLimpio = codigo.trim();
+    if (codigoLimpio.isEmpty) {
+      final cart = ref.read(facturacionProvider).carrito;
+      if (cart.isNotEmpty) {
+        _procesarVenta();
+      } else {
+        if (mounted) {
+          showToast(context, 'El carrito está vacío', bgColor: Colors.orange);
+        }
+      }
+      return;
+    }
 
-    if (codigo.trim().length >= 10 &&
-        RegExp(r'^\d+$').hasMatch(codigo.trim())) {
+    final auth = ref.read(authProvider);
+    final prodState = ref.read(productoProvider);
+
+    // 1. Buscar en los productos cargados localmente (código de barra, SKU o ID)
+    Producto? productoEncontrado;
+
+    // A) Coincidencia exacta por código de barra (insensible a mayúsculas/minúsculas)
+    productoEncontrado = prodState.productos.where((p) {
+      if (p.tipoProducto == 'MATERIA_PRIMA') return false;
+      final c = p.codigo?.trim().toLowerCase() ?? '';
+      return c.isNotEmpty && c == codigoLimpio.toLowerCase();
+    }).firstOrNull;
+
+    // B) Si no se encontró por código, intentar por ID exacto (#ID)
+    if (productoEncontrado == null && RegExp(r'^\d+$').hasMatch(codigoLimpio)) {
+      final idNum = int.tryParse(codigoLimpio);
+      if (idNum != null) {
+        productoEncontrado = prodState.productos.where((p) {
+          if (p.tipoProducto == 'MATERIA_PRIMA') return false;
+          return p.id == idNum;
+        }).firstOrNull;
+      }
+    }
+
+    // C) Si no se encuentra en memoria local, buscar en el servidor por API
+    if (productoEncontrado == null && auth.token != null) {
       try {
-        final pedido = await _pedidoService.getPedidoByCodigo(codigo.trim());
+        final apiRes = await ProductoApi().fetchProductos(
+          auth.token!,
+          search: codigoLimpio,
+          perPage: 5,
+        );
+        final List<Producto> resultados = apiRes['productos'] ?? [];
+        productoEncontrado = resultados.where((p) {
+          if (p.tipoProducto == 'MATERIA_PRIMA') return false;
+          final c = p.codigo?.trim().toLowerCase() ?? '';
+          return c.isNotEmpty && c == codigoLimpio.toLowerCase();
+        }).firstOrNull;
+
+        if (productoEncontrado == null && resultados.length == 1) {
+          final unico = resultados.first;
+          if (unico.tipoProducto != 'MATERIA_PRIMA') {
+            productoEncontrado = unico;
+          }
+        }
+      } catch (e) {
+        debugPrint('Error buscando producto por API: $e');
+      }
+    }
+
+    // D) Si se encontró un producto -> Agregar al carrito automáticamente
+    if (productoEncontrado != null) {
+      factNotifier.agregarProducto(
+        FacturaItem(
+          id: productoEncontrado.id.toString(),
+          descripcion: productoEncontrado.nombre ?? 'Sin nombre',
+          precio: productoEncontrado.precioVenta ?? 0,
+          itbisPorcentaje: productoEncontrado.impuesto?.tasa ?? 0.0,
+        ),
+      );
+
+      if (mounted) {
+        setState(() {
+          _searchQuery = '';
+          _searchController.clear();
+        });
+        _searchFocusNode.requestFocus();
+      }
+      return;
+    }
+
+    // 2. Si no es producto, verificar si es un ticket de comanda/pedido de restaurante
+    if (codigoLimpio.length >= 10 && RegExp(r'^\d+$').hasMatch(codigoLimpio)) {
+      try {
+        final pedido = await _pedidoService.getPedidoByCodigo(codigoLimpio);
         if (pedido != null) {
           factNotifier.limpiarCarrito();
           for (var detalle in pedido.detalles) {
@@ -125,15 +217,11 @@ class _CrearFacturaPageState extends ConsumerState<CrearFacturaPage> {
             );
           }
           if (mounted) {
-            showToast(
-              context,
-              'Pedido #${pedido.secuenciaDiaria} cargado',
-              bgColor: Colors.green,
-            );
             setState(() {
               _searchQuery = '';
               _searchController.clear();
             });
+            _searchFocusNode.requestFocus();
           }
           return;
         }
@@ -142,6 +230,45 @@ class _CrearFacturaPageState extends ConsumerState<CrearFacturaPage> {
           showToast(context, 'No se encontró pedido', bgColor: Colors.orange);
         }
       }
+    }
+
+    // 3. Si hay productos filtrados en pantalla y solo hay 1 coincidencia exacta/única
+    final normalizeQuery = codigoLimpio.toLowerCase();
+    final productosFiltrados = prodState.productos.where((p) {
+      if (p.tipoProducto == 'MATERIA_PRIMA') return false;
+      final name = (p.nombre ?? '').toLowerCase();
+      final cod = (p.codigo ?? '').toLowerCase();
+      return name.contains(normalizeQuery) || cod.contains(normalizeQuery);
+    }).toList();
+
+    if (productosFiltrados.length == 1) {
+      final p = productosFiltrados.first;
+      factNotifier.agregarProducto(
+        FacturaItem(
+          id: p.id.toString(),
+          descripcion: p.nombre ?? 'Sin nombre',
+          precio: p.precioVenta ?? 0,
+          itbisPorcentaje: p.impuesto?.tasa ?? 0.0,
+        ),
+      );
+      if (mounted) {
+        setState(() {
+          _searchQuery = '';
+          _searchController.clear();
+        });
+        _searchFocusNode.requestFocus();
+      }
+      return;
+    }
+
+    // 4. Si no se encontró nada
+    if (mounted) {
+      showToast(
+        context,
+        'No se encontró producto con código: $codigoLimpio',
+        bgColor: Colors.orange.shade800,
+      );
+      _searchFocusNode.requestFocus();
     }
   }
 
@@ -216,9 +343,17 @@ class _CrearFacturaPageState extends ConsumerState<CrearFacturaPage> {
     ref
         .read(productoProvider.notifier)
         .loadProductos(auth.token!, silent: true, search: '');
+
+    // 4. Devolver foco al buscador para el siguiente escaneo
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _searchFocusNode.requestFocus();
+      }
+    });
   }
 
   Future<void> _procesarVenta() async {
+    if (_isProcessingVenta) return;
     final state = ref.read(facturacionProvider);
     final auth = ref.read(authProvider);
 
@@ -237,78 +372,76 @@ class _CrearFacturaPageState extends ConsumerState<CrearFacturaPage> {
       return;
     }
 
-    // 🖨️ VERIFICACIÓN DE IMPRESORA
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (_) => const Center(child: CircularProgressIndicator()),
-    );
+    _isProcessingVenta = true;
+    try {
+      Map<String, dynamic>? pagoInfo;
+      bool imprimirTicket = _imprimirAutomaticamente;
 
-    if (mounted) {
-      Navigator.pop(context); // cerrar loader
-    }
+      // Si es al contado, pedir el pago primero
+      if (state.tipoFactura == 'contado') {
+        pagoInfo = await showDialog<Map<String, dynamic>>(
+          context: context,
+          barrierDismissible: false,
+          builder: (ctx) => PagoDialog(
+            total: state.totales.total,
+            initialImprimir: _imprimirAutomaticamente,
+          ),
+        );
 
-    Map<String, dynamic>? pagoInfo;
-    bool imprimirTicket = _imprimirAutomaticamente;
+        // Si cancela el diálogo, no procesar factura
+        if (pagoInfo == null) return;
 
-    // Si es al contado, pedir el pago primero
-    if (state.tipoFactura == 'contado') {
-      pagoInfo = await showDialog<Map<String, dynamic>>(
-        context: context,
-        barrierDismissible: false,
-        builder: (ctx) => PagoDialog(
-          total: state.totales.total,
-          initialImprimir: _imprimirAutomaticamente,
-        ),
+        imprimirTicket =
+            pagoInfo['imprimir_factura'] ?? _imprimirAutomaticamente;
+      }
+
+      final result = await _facturaService.crearFactura(
+        cliente: state.clienteSeleccionado!,
+        comprobante: state.comprobanteSeleccionado!,
+        items: state.carrito,
+        token: auth.token!,
+        userId: auth.user!.id!,
+        tipoFactura: state.tipoFactura,
+        diasCredito: state.diasCredito,
+        nota: state.nota,
+        pago: pagoInfo,
       );
 
-      // Si cancela el diálogo, no procesar factura
-      if (pagoInfo == null) return;
+      if (result['success'] && mounted) {
+        // 🖨️ Imprimir ticket en impresora térmica USB y abrir caja de billetes (una sola vez)
+        if (imprimirTicket) {
+          _imprimirTicket(state, result['data'], pagoInfo);
+        } else {
+          // Si no se imprime ticket físico, abrir la caja de billetes por la impresora (una sola vez)
+          ThermalPrinterService.instance.abrirCajon();
+        }
 
-      imprimirTicket = pagoInfo['imprimir_factura'] ?? _imprimirAutomaticamente;
-    }
+        // Si la factura provino de una mesa, liberarla en el salón
+        if (_mesaVinculada != null) {
+          final mesaId = _mesaVinculada!.id;
+          final mesaNombre = _mesaVinculada!.nombre;
+          _mesaVinculada = null;
+          try {
+            await ref.read(mesasProvider).liberarMesa(mesaId, porFactura: true);
+            if (mounted) {
+              showToast(
+                context,
+                'Factura procesada y Mesa $mesaNombre liberada',
+                bgColor: Colors.green,
+              );
+            }
+          } catch (_) {}
+        } else {
+          showToast(context, 'Factura creada con éxito', bgColor: Colors.green);
+        }
 
-    final result = await _facturaService.crearFactura(
-      cliente: state.clienteSeleccionado!,
-      comprobante: state.comprobanteSeleccionado!,
-      items: state.carrito,
-      token: auth.token!,
-      userId: auth.user!.id!,
-      tipoFactura: state.tipoFactura,
-      diasCredito: state.diasCredito,
-      nota: state.nota,
-      pago: pagoInfo,
-    );
-
-    if (result['success'] && mounted) {
-      // 🖨️ Imprimir ticket en impresora térmica USB si está activado
-      if (imprimirTicket) {
-        _imprimirTicket(state, result['data'], pagoInfo);
+        // Resetear para la siguiente venta
+        _resetParaSiguienteVenta();
+      } else if (mounted) {
+        showToast(context, result['message'], bgColor: Colors.red);
       }
-
-      // Si la factura provino de una mesa, liberarla en el salón
-      if (_mesaVinculada != null) {
-        final mesaId = _mesaVinculada!.id;
-        final mesaNombre = _mesaVinculada!.nombre;
-        _mesaVinculada = null;
-        try {
-          await ref.read(mesasProvider).liberarMesa(mesaId, porFactura: true);
-          if (mounted) {
-            showToast(
-              context,
-              'Factura procesada y Mesa $mesaNombre liberada',
-              bgColor: Colors.green,
-            );
-          }
-        } catch (_) {}
-      } else {
-        showToast(context, 'Factura creada con éxito', bgColor: Colors.green);
-      }
-
-      // Resetear para la siguiente venta
-      _resetParaSiguienteVenta();
-    } else if (mounted) {
-      showToast(context, result['message'], bgColor: Colors.red);
+    } finally {
+      _isProcessingVenta = false;
     }
   }
 
@@ -346,13 +479,16 @@ class _CrearFacturaPageState extends ConsumerState<CrearFacturaPage> {
       nota: state.nota.isNotEmpty ? state.nota : null,
       tipoPago: state.tipoFactura == 'contado' ? 'CONTADO' : 'CREDITO',
       metodoPago: pagoInfo?['metodo_pago']?.toString().toUpperCase(),
-      montoRecibido: double.tryParse(pagoInfo?['monto_recibido']?.toString() ?? ''),
+      montoRecibido: double.tryParse(
+        pagoInfo?['monto_recibido']?.toString() ?? '',
+      ),
       devuelta: double.tryParse(pagoInfo?['devuelta']?.toString() ?? ''),
       qrUrl: facturaData?['qr_url']?.toString(),
       codigoSeguridad: facturaData?['codigo_seguridad']?.toString(),
       fechaFirma: facturaData?['fecha_hora_firma']?.toString(),
       cajero: ref.read(authProvider).user?.name ?? 'Cajera',
       modoTemporalVenta: true,
+      abrirCajon: true,
     );
 
     if (!resultado.exito && mounted) {
@@ -363,6 +499,16 @@ class _CrearFacturaPageState extends ConsumerState<CrearFacturaPage> {
         bgColor: Colors.orange.shade700,
       );
     }
+  }
+
+  Future<void> _abrirCajonManual() async {
+    final res = await ThermalPrinterService.instance.abrirCajon();
+    if (!mounted) return;
+    showToast(
+      context,
+      res.mensaje,
+      bgColor: res.exito ? Colors.teal : Colors.orange.shade700,
+    );
   }
 
   @override
@@ -385,227 +531,261 @@ class _CrearFacturaPageState extends ConsumerState<CrearFacturaPage> {
       return const AperturaCajaPage();
     }
 
-    return Scaffold(
-      backgroundColor: AppColors.light,
-      appBar: AppBar(
-        elevation: 0,
-        backgroundColor: Colors.white,
-        title: Column(
+    return CallbackShortcuts(
+      bindings: {
+        const SingleActivator(LogicalKeyboardKey.enter): () {
+          if (_searchController.text.trim().isEmpty) {
+            final cart = ref.read(facturacionProvider).carrito;
+            if (cart.isNotEmpty) {
+              _procesarVenta();
+            }
+          }
+        },
+        const SingleActivator(LogicalKeyboardKey.numpadEnter): () {
+          if (_searchController.text.trim().isEmpty) {
+            final cart = ref.read(facturacionProvider).carrito;
+            if (cart.isNotEmpty) {
+              _procesarVenta();
+            }
+          }
+        },
+      },
+      child: Scaffold(
+        backgroundColor: AppColors.light,
+        appBar: AppBar(
+          elevation: 0,
+          backgroundColor: Colors.white,
+          title: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Vender',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w900,
+                  color: AppColors.secondary,
+                ),
+              ),
+              Text(
+                '${cajaState.sesionActiva?['caja']?['nombre'] ?? '...'} | ${cajaState.sesionActiva?['turno']?['nombre'] ?? '...'}',
+                style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
+              ),
+            ],
+          ),
+          actions: [
+            const SizedBox(width: 8),
+            // 🍽️ Indicador o botón selector de Mesa
+            if (_mesaVinculada != null) ...[
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
+                decoration: BoxDecoration(
+                  color: Colors.deepOrange.shade50,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.deepOrange.shade300),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(
+                      Icons.table_restaurant_rounded,
+                      size: 15,
+                      color: Colors.deepOrange,
+                    ),
+                    const SizedBox(width: 5),
+                    Text(
+                      'Mesa: ${_mesaVinculada!.nombre}',
+                      style: const TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.deepOrange,
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    InkWell(
+                      onTap: () {
+                        setState(() => _mesaVinculada = null);
+                        factNotifier.limpiarCarrito();
+                        showToast(context, 'Mesa desvinculada del cobro');
+                      },
+                      child: const Icon(
+                        Icons.close,
+                        size: 13,
+                        color: Colors.deepOrange,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 6),
+            ] else ...[
+              _buildCircleButton(
+                icon: Icons.table_restaurant_rounded,
+                color: Colors.deepOrange,
+                tooltip: 'Cargar Comanda de Mesa',
+                onTap: _abrirSelectorMesa,
+              ),
+              const SizedBox(width: 6),
+            ],
+            // 🖨️ Botón toggle de impresión automática
+            _buildCircleButton(
+              icon: _imprimirAutomaticamente
+                  ? Icons.print
+                  : Icons.print_disabled,
+              color: _imprimirAutomaticamente ? Colors.teal : Colors.grey,
+              tooltip: _imprimirAutomaticamente
+                  ? 'Impresión Automática: ON'
+                  : 'Impresión Automática: OFF',
+              onTap: () {
+                setState(() {
+                  _imprimirAutomaticamente = !_imprimirAutomaticamente;
+                });
+                showToast(
+                  context,
+                  _imprimirAutomaticamente
+                      ? 'Impresión automática ACTIVADA'
+                      : 'Impresión automática DESACTIVADA',
+                  bgColor: _imprimirAutomaticamente
+                      ? Colors.teal
+                      : Colors.grey.shade700,
+                );
+              },
+            ),
+            const SizedBox(width: 8),
+            // 💵 Botón para abrir el cajón de billete manualmente
+            _buildCircleButton(
+              icon: Icons.point_of_sale_rounded,
+              color: Colors.green.shade700,
+              tooltip: 'Abrir Cajón de Billete',
+              onTap: _abrirCajonManual,
+            ),
+            const SizedBox(width: 8),
+            // 🖨️ Botón de prueba de impresora
+            // _buildCircleButton(
+            //   icon: Icons.receipt_long_outlined,
+            //   color: Colors.blueAccent,
+            //   tooltip: 'Probar Impresora',
+            //   onTap: () async {
+            //     final resultado = await _printer.imprimirFactura();
+
+            //     if (mounted) {
+            //       showToast(
+            //         context,
+            //         resultado.mensaje,
+            //         bgColor: resultado.exito
+            //             ? Colors.teal
+            //             : Colors.orange.shade700,
+            //       );
+            //     }
+            //   },
+            // ),
+            const SizedBox(width: 8),
+            _buildCircleButton(
+              icon: Icons.delete_sweep_outlined,
+              color: Colors.redAccent,
+              onTap: () => factNotifier.limpiarCarrito(),
+              tooltip: 'Limpiar Carrito',
+            ),
+            const SizedBox(width: 16),
+          ],
+        ),
+        body: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'Vender',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w900,
-                color: AppColors.secondary,
+            // 📋 PANEL IZQUIERDO: CONFIGURACIÓN
+            SizedBox(
+              width: 260,
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(8),
+                child: PanelConfiguracion(
+                  cliente: factState.clienteSeleccionado,
+                  comprobante: factState.comprobanteSeleccionado,
+                  comprobantes: _comprobantes,
+                  tipoFactura: factState.tipoFactura,
+                  diasCredito: factState.diasCredito,
+                  nota: factState.nota,
+                  onSelectCliente: () async {
+                    final cliente = await showDialog<Cliente>(
+                      context: context,
+                      builder: (ctx) => BuscadorClienteDialog(
+                        clientes: clienteState.clientes,
+                      ),
+                    );
+                    if (cliente != null) {
+                      factNotifier.seleccionarCliente(cliente);
+                    }
+                  },
+                  onSelectComprobante: (c) =>
+                      factNotifier.seleccionarComprobante(c!),
+                  onCambiarTipo: factNotifier.cambiarTipoFactura,
+                  onCambiarDias: factNotifier.cambiarDiasCredito,
+                  onCambiarNota: factNotifier.cambiarNota,
+                ),
               ),
             ),
-            Text(
-              '${cajaState.sesionActiva?['caja']?['nombre'] ?? '...'} | ${cajaState.sesionActiva?['turno']?['nombre'] ?? '...'}',
-              style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
+
+            // 🍕 PANEL CENTRAL: CATÁLOGO
+            Expanded(
+              child: Container(
+                margin: const EdgeInsets.fromLTRB(0, 8, 8, 8),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.03),
+                      blurRadius: 15,
+                      offset: const Offset(0, 8),
+                    ),
+                  ],
+                ),
+                child: _buildProductCatalog(prodState, factNotifier),
+              ),
+            ),
+
+            // 🛒 PANEL DERECHO: CARRITO Y TOTALES
+            SizedBox(
+              width: 300,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(0, 8, 8, 8),
+                child: Column(
+                  children: [
+                    Expanded(
+                      child: Container(
+                        clipBehavior: Clip.antiAlias,
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(16),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.03),
+                              blurRadius: 15,
+                              offset: const Offset(0, 8),
+                            ),
+                          ],
+                        ),
+                        child: CarritoLista(
+                          items: factState.carrito,
+                          onUpdateCantidad: factNotifier.actualizarCantidad,
+                          onRemove: factNotifier.removerProducto,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    PanelTotales(
+                      totales: factState.totales,
+                      isLoading: factState.isLoading,
+                      carrito: factState.carrito,
+                      onProcesar: _procesarVenta,
+                    ),
+                  ],
+                ),
+              ),
             ),
           ],
         ),
-        actions: [
-          const SizedBox(width: 8),
-          // 🍽️ Indicador o botón selector de Mesa
-          if (_mesaVinculada != null) ...[
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-              decoration: BoxDecoration(
-                color: Colors.deepOrange.shade50,
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.deepOrange.shade300),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Icon(
-                    Icons.table_restaurant_rounded,
-                    size: 15,
-                    color: Colors.deepOrange,
-                  ),
-                  const SizedBox(width: 5),
-                  Text(
-                    'Mesa: ${_mesaVinculada!.nombre}',
-                    style: const TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.deepOrange,
-                    ),
-                  ),
-                  const SizedBox(width: 4),
-                  InkWell(
-                    onTap: () {
-                      setState(() => _mesaVinculada = null);
-                      factNotifier.limpiarCarrito();
-                      showToast(context, 'Mesa desvinculada del cobro');
-                    },
-                    child: const Icon(
-                      Icons.close,
-                      size: 13,
-                      color: Colors.deepOrange,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(width: 6),
-          ] else ...[
-            _buildCircleButton(
-              icon: Icons.table_restaurant_rounded,
-              color: Colors.deepOrange,
-              tooltip: 'Cargar Comanda de Mesa',
-              onTap: _abrirSelectorMesa,
-            ),
-            const SizedBox(width: 6),
-          ],
-          // 🖨️ Botón toggle de impresión automática
-          _buildCircleButton(
-            icon: _imprimirAutomaticamente ? Icons.print : Icons.print_disabled,
-            color: _imprimirAutomaticamente ? Colors.teal : Colors.grey,
-            tooltip: _imprimirAutomaticamente
-                ? 'Impresión Automática: ON'
-                : 'Impresión Automática: OFF',
-            onTap: () {
-              setState(() {
-                _imprimirAutomaticamente = !_imprimirAutomaticamente;
-              });
-              showToast(
-                context,
-                _imprimirAutomaticamente
-                    ? 'Impresión automática ACTIVADA'
-                    : 'Impresión automática DESACTIVADA',
-                bgColor: _imprimirAutomaticamente
-                    ? Colors.teal
-                    : Colors.grey.shade700,
-              );
-            },
-          ),
-          const SizedBox(width: 8),
-          // 🖨️ Botón de prueba de impresora
-          // _buildCircleButton(
-          //   icon: Icons.receipt_long_outlined,
-          //   color: Colors.blueAccent,
-          //   tooltip: 'Probar Impresora',
-          //   onTap: () async {
-          //     final resultado = await _printer.imprimirFactura();
-
-          //     if (mounted) {
-          //       showToast(
-          //         context,
-          //         resultado.mensaje,
-          //         bgColor: resultado.exito
-          //             ? Colors.teal
-          //             : Colors.orange.shade700,
-          //       );
-          //     }
-          //   },
-          // ),
-          const SizedBox(width: 8),
-          _buildCircleButton(
-            icon: Icons.delete_sweep_outlined,
-            color: Colors.redAccent,
-            onTap: () => factNotifier.limpiarCarrito(),
-            tooltip: 'Limpiar Carrito',
-          ),
-          const SizedBox(width: 16),
-        ],
-      ),
-      body: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // 📋 PANEL IZQUIERDO: CONFIGURACIÓN
-          SizedBox(
-            width: 260,
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(8),
-              child: PanelConfiguracion(
-                cliente: factState.clienteSeleccionado,
-                comprobante: factState.comprobanteSeleccionado,
-                comprobantes: _comprobantes,
-                tipoFactura: factState.tipoFactura,
-                diasCredito: factState.diasCredito,
-                nota: factState.nota,
-                onSelectCliente: () async {
-                  final cliente = await showDialog<Cliente>(
-                    context: context,
-                    builder: (ctx) =>
-                        BuscadorClienteDialog(clientes: clienteState.clientes),
-                  );
-                  if (cliente != null) {
-                    factNotifier.seleccionarCliente(cliente);
-                  }
-                },
-                onSelectComprobante: (c) =>
-                    factNotifier.seleccionarComprobante(c!),
-                onCambiarTipo: factNotifier.cambiarTipoFactura,
-                onCambiarDias: factNotifier.cambiarDiasCredito,
-                onCambiarNota: factNotifier.cambiarNota,
-              ),
-            ),
-          ),
-
-          // 🍕 PANEL CENTRAL: CATÁLOGO
-          Expanded(
-            child: Container(
-              margin: const EdgeInsets.fromLTRB(0, 8, 8, 8),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.03),
-                    blurRadius: 15,
-                    offset: const Offset(0, 8),
-                  ),
-                ],
-              ),
-              child: _buildProductCatalog(prodState, factNotifier),
-            ),
-          ),
-
-          // 🛒 PANEL DERECHO: CARRITO Y TOTALES
-          SizedBox(
-            width: 300,
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(0, 8, 8, 8),
-              child: Column(
-                children: [
-                  Expanded(
-                    child: Container(
-                      clipBehavior: Clip.antiAlias,
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(16),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.03),
-                            blurRadius: 15,
-                            offset: const Offset(0, 8),
-                          ),
-                        ],
-                      ),
-                      child: CarritoLista(
-                        items: factState.carrito,
-                        onUpdateCantidad: factNotifier.actualizarCantidad,
-                        onRemove: factNotifier.removerProducto,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  PanelTotales(
-                    totales: factState.totales,
-                    isLoading: factState.isLoading,
-                    carrito: factState.carrito,
-                    onProcesar: _procesarVenta,
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
       ),
     );
   }
@@ -626,8 +806,9 @@ class _CrearFacturaPageState extends ConsumerState<CrearFacturaPage> {
 
     final filteredProducts = prodState.productos.where((p) {
       if (p.tipoProducto == 'MATERIA_PRIMA') return false;
-      final name = p.nombre;
-      return normalize(name ?? '').contains(normalizeQuery);
+      final name = normalize(p.nombre ?? '');
+      final code = normalize(p.codigo ?? '');
+      return name.contains(normalizeQuery) || code.contains(normalizeQuery);
     }).toList();
 
     return Column(
@@ -645,19 +826,52 @@ class _CrearFacturaPageState extends ConsumerState<CrearFacturaPage> {
                   ),
                   child: TextField(
                     controller: _searchController,
+                    focusNode: _searchFocusNode,
+                    autofocus: true,
                     style: const TextStyle(fontSize: 14),
-                    onChanged: (v) => setState(() => _searchQuery = v),
+                    onChanged: (v) {
+                      setState(() => _searchQuery = v);
+                      final query = v.trim();
+                      if (query.length >= 3) {
+                        // Detección instantánea por escáner de código de barras (incluso si no envía Enter)
+                        final prodState = ref.read(productoProvider);
+                        final matchExacto = prodState.productos.where((p) {
+                          if (p.tipoProducto == 'MATERIA_PRIMA') return false;
+                          final cod = p.codigo?.trim().toLowerCase() ?? '';
+                          return cod.isNotEmpty && cod == query.toLowerCase();
+                        }).firstOrNull;
+
+                        if (matchExacto != null) {
+                          _handleBarcodeScan(query, factNotifier);
+                        }
+                      }
+                    },
                     onSubmitted: (v) => _handleBarcodeScan(v, factNotifier),
-                    decoration: const InputDecoration(
-                      hintText:
-                          'Buscar producto o escanear ticket de pedido...',
+                    decoration: InputDecoration(
+                      hintText: 'Buscar producto o escanear código / ticket...',
                       border: InputBorder.none,
-                      hintStyle: TextStyle(fontSize: 13),
-                      icon: Icon(
+                      hintStyle: const TextStyle(fontSize: 13),
+                      prefixIcon: const Icon(
                         Icons.qr_code_scanner,
-                        color: Colors.grey,
-                        size: 16,
+                        color: AppColors.primary,
+                        size: 18,
                       ),
+                      suffixIcon: _searchController.text.isNotEmpty
+                          ? IconButton(
+                              icon: const Icon(
+                                Icons.clear,
+                                size: 16,
+                                color: Colors.grey,
+                              ),
+                              onPressed: () {
+                                setState(() {
+                                  _searchController.clear();
+                                  _searchQuery = '';
+                                });
+                                _searchFocusNode.requestFocus();
+                              },
+                            )
+                          : null,
                     ),
                   ),
                 ),
@@ -709,7 +923,8 @@ class _CrearFacturaPageState extends ConsumerState<CrearFacturaPage> {
     }
 
     return Tooltip(
-      message: prod.nombre ?? '',
+      message:
+          '${prod.nombre ?? ""}${(prod.codigo != null && prod.codigo!.isNotEmpty) ? " • Cód: ${prod.codigo}" : ""}',
       waitDuration: const Duration(milliseconds: 500),
       child: InkWell(
         onTap: () {
@@ -721,6 +936,7 @@ class _CrearFacturaPageState extends ConsumerState<CrearFacturaPage> {
               itbisPorcentaje: prod.impuesto?.tasa ?? 0.0,
             ),
           );
+          _searchFocusNode.requestFocus();
         },
         borderRadius: BorderRadius.circular(8),
         child: Container(
